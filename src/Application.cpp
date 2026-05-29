@@ -81,9 +81,14 @@ void Application::run() {
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        imguiPanels.render();
-
         renderer.renderBackground();
+
+        renderer.renderDay2TestScene(
+            imguiPanels.getXRayMode(),
+            imguiPanels.getSelectedLineAlgorithm()
+        );
+
+        imguiPanels.render();
 
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -91,7 +96,6 @@ void Application::run() {
         glfwSwapBuffers(window);
     }
 }
-
 void Application::processInput() {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, true);

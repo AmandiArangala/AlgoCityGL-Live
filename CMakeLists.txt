@@ -16,6 +16,10 @@ add_executable(AlgoCityGL_Live
     src/Renderer.cpp
     src/ImGuiPanels.cpp
 
+    graphics/PixelBuffer.cpp
+    graphics/LineAlgorithms.cpp
+    graphics/CircleAlgorithms.cpp
+
     ${GLAD_DIR}/src/glad.c
 
     ${IMGUI_DIR}/imgui.cpp
@@ -28,6 +32,7 @@ add_executable(AlgoCityGL_Live
 
 target_include_directories(AlgoCityGL_Live PRIVATE
     include
+    graphics
     ${GLAD_DIR}/include
     ${GLFW_DIR}/include
     ${IMGUI_DIR}
