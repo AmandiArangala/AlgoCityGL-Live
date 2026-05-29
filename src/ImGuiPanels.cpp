@@ -25,7 +25,7 @@ void ImGuiPanels::render() {
     ImGui::Combo("Selected Area", &selectedArea, areas, IM_ARRAYSIZE(areas));
 
     if (ImGui::Button("Load Area")) {
-        // Area loading will be implemented later.
+        loadAreaRequested = true;
     }
 
     ImGui::Separator();
@@ -42,12 +42,12 @@ void ImGuiPanels::render() {
 
     ImGui::Separator();
 
-    ImGui::Text("Day 2 Status:");
-    ImGui::BulletText("Pixel plotting added");
-    ImGui::BulletText("DDA line algorithm added");
-    ImGui::BulletText("Bresenham line algorithm added");
-    ImGui::BulletText("Midpoint circle algorithm added");
-    ImGui::BulletText("Manual road/wheel test scene added");
+    ImGui::Text("Day 3 Status:");
+    ImGui::BulletText("Area JSON loading added");
+    ImGui::BulletText("Road data loading added");
+    ImGui::BulletText("Building data loading added");
+    ImGui::BulletText("Traffic signal data loading added");
+    ImGui::BulletText("Routes loading added");
 
     ImGui::End();
 }
@@ -58,4 +58,17 @@ bool ImGuiPanels::getXRayMode() const {
 
 int ImGuiPanels::getSelectedLineAlgorithm() const {
     return selectedLineAlgorithm;
+}
+
+int ImGuiPanels::getSelectedArea() const {
+    return selectedArea;
+}
+
+bool ImGuiPanels::consumeLoadAreaRequest() {
+    if (loadAreaRequested) {
+        loadAreaRequested = false;
+        return true;
+    }
+
+    return false;
 }

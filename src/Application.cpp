@@ -81,14 +81,27 @@ void Application::run() {
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
+        imguiPanels.render();
+
+        if (imguiPanels.consumeLoadAreaRequest()) {
+            std::string filePath = getAreaFilePath(imguiPanels.getSelectedArea());
+            areaManager.loadAreaFromFile(filePath);
+        }
+
         renderer.renderBackground();
 
-        renderer.renderDay2TestScene(
-            imguiPanels.getXRayMode(),
-            imguiPanels.getSelectedLineAlgorithm()
-        );
-
-        imguiPanels.render();
+        if (areaManager.hasLoadedArea()) {
+            renderer.renderCityArea(
+                areaManager.getCurrentArea(),
+                imguiPanels.getXRayMode(),
+                imguiPanels.getSelectedLineAlgorithm()
+            );
+        } else {
+            renderer.renderDay2TestScene(
+                imguiPanels.getXRayMode(),
+                imguiPanels.getSelectedLineAlgorithm()
+            );
+        }
 
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -96,6 +109,7 @@ void Application::run() {
         glfwSwapBuffers(window);
     }
 }
+
 void Application::processInput() {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, true);
@@ -113,4 +127,17 @@ void Application::shutdown() {
     }
 
     glfwTerminate();
+}
+
+std::string Application::getAreaFilePath(int selectedArea) const {
+    switch (selectedArea) {
+        case 0:
+            return "../data/moratuwa_area.json";
+        case 1:
+            return "../data/pettah_area.json";
+        case 2:
+            return "../data/borella_area.json";
+        default:
+            return "../data/moratuwa_area.json";
+    }
 }

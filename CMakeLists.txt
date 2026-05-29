@@ -20,6 +20,8 @@ add_executable(AlgoCityGL_Live
     graphics/LineAlgorithms.cpp
     graphics/CircleAlgorithms.cpp
 
+    city/AreaManager.cpp
+
     ${GLAD_DIR}/src/glad.c
 
     ${IMGUI_DIR}/imgui.cpp
@@ -33,6 +35,8 @@ add_executable(AlgoCityGL_Live
 target_include_directories(AlgoCityGL_Live PRIVATE
     include
     graphics
+    city
+    external/json
     ${GLAD_DIR}/include
     ${GLFW_DIR}/include
     ${IMGUI_DIR}

@@ -1,0 +1,68 @@
+{
+  "name": "University of Moratuwa Demo Area",
+  "latitude": 6.7969,
+  "longitude": 79.9018,
+  "defaultTrafficLevel": "MODERATE",
+
+  "roads": [
+    {
+      "id": "main_road",
+      "name": "Main Road",
+      "points": [[100, 520], [260, 470], [430, 410], [620, 350], [850, 280]],
+      "lanes": 2
+    },
+    {
+      "id": "side_road",
+      "name": "Campus Road",
+      "points": [[430, 410], [450, 300], [470, 180]],
+      "lanes": 1
+    }
+  ],
+
+  "buildings": [
+    {
+      "id": "building_1",
+      "name": "Academic Building",
+      "base": [[560, 140], [740, 140], [740, 260], [560, 260]],
+      "height": 80
+    },
+    {
+      "id": "building_2",
+      "name": "Library Block",
+      "base": [[250, 170], [390, 170], [390, 270], [250, 270]],
+      "height": 60
+    },
+    {
+      "id": "building_3",
+      "name": "Admin Block",
+      "base": [[780, 370], [930, 370], [930, 470], [780, 470]],
+      "height": 70
+    }
+  ],
+
+  "trafficLights": [
+    {
+      "id": "signal_1",
+      "position": [430, 410],
+      "cycle": [20, 5, 20]
+    }
+  ],
+
+  "crossings": [
+    {
+      "id": "crossing_1",
+      "points": [[390, 430], [470, 400]]
+    }
+  ],
+
+  "routes": [
+    {
+      "id": "route_1",
+      "points": [[100, 520], [260, 470], [430, 410], [620, 350], [850, 280]]
+    },
+    {
+      "id": "route_2",
+      "points": [[430, 410], [450, 300], [470, 180]]
+    }
+  ]
+}
