@@ -23,6 +23,7 @@ void Renderer::renderDay2TestScene(bool xrayMode, int selectedLineAlgorithm) {
 void Renderer::renderCityArea(
     const CityArea& area,
     const std::vector<Vehicle>& vehicles,
+    const std::vector<RuntimeTrafficLight>& trafficLights,
     bool xrayMode,
     int selectedLineAlgorithm,
     bool isometricMode
@@ -34,6 +35,7 @@ void Renderer::renderCityArea(
     buildCityPixelScene(area, selectedLineAlgorithm, xrayMode, isometricMode);
     drawPixelBuffer(xrayMode);
 
+    drawRuntimeTrafficLights(trafficLights, isometricMode);
     drawVehicles(vehicles, isometricMode);
 }
 
@@ -236,6 +238,7 @@ void Renderer::buildCityPixelScene(
     }
 
     // Draw traffic lights
+    /*
     for (const TrafficLight& light : area.trafficLights) {
         Vec2 pos = transformForView(light.position, isometricMode);
 
@@ -246,7 +249,7 @@ void Renderer::buildCityPixelScene(
             14,
             signalRed
         );
-    }
+    }*/
 }
 
 void Renderer::buildDay2PixelScene(int selectedLineAlgorithm) {
@@ -278,6 +281,76 @@ void Renderer::buildDay2PixelScene(int selectedLineAlgorithm) {
     CircleAlgorithms::drawCircleMidpoint(pixelBuffer, 900, 180, 18, lightColor);
     CircleAlgorithms::drawCircleMidpoint(pixelBuffer, 900, 230, 18, Color(1.0f, 1.0f, 0.1f, 1.0f));
     CircleAlgorithms::drawCircleMidpoint(pixelBuffer, 900, 280, 18, Color(0.1f, 1.0f, 0.1f, 1.0f));
+}
+
+void Renderer::drawRuntimeTrafficLights(
+    const std::vector<RuntimeTrafficLight>& trafficLights,
+    bool isometricMode
+) {
+    ImDrawList* drawList = ImGui::GetBackgroundDrawList();
+
+    for (const RuntimeTrafficLight& light : trafficLights) {
+        Vec2 pos = transformForView(light.baseLight.position, isometricMode);
+
+        float radius = 7.0f;
+        float spacing = 18.0f;
+
+        ImVec2 redPos(pos.x, pos.y - spacing);
+        ImVec2 yellowPos(pos.x, pos.y);
+        ImVec2 greenPos(pos.x, pos.y + spacing);
+
+        ImU32 redColor;
+        ImU32 yellowColor;
+        ImU32 greenColor;
+
+        if (light.state == SignalState::Red) {
+            redColor = IM_COL32(255, 40, 40, 255);
+            yellowColor = IM_COL32(70, 70, 20, 180);
+            greenColor = IM_COL32(20, 70, 20, 180);
+        } else if (light.state == SignalState::Yellow) {
+            redColor = IM_COL32(70, 20, 20, 180);
+            yellowColor = IM_COL32(255, 230, 30, 255);
+            greenColor = IM_COL32(20, 70, 20, 180);
+        } else {
+            redColor = IM_COL32(70, 20, 20, 180);
+            yellowColor = IM_COL32(70, 70, 20, 180);
+            greenColor = IM_COL32(40, 255, 80, 255);
+        }
+
+        // Traffic light pole/body
+        drawList->AddRectFilled(
+            ImVec2(pos.x - 11.0f, pos.y - spacing - 12.0f),
+            ImVec2(pos.x + 11.0f, pos.y + spacing + 12.0f),
+            IM_COL32(25, 25, 25, 230),
+            4.0f
+        );
+
+        drawList->AddRect(
+            ImVec2(pos.x - 11.0f, pos.y - spacing - 12.0f),
+            ImVec2(pos.x + 11.0f, pos.y + spacing + 12.0f),
+            IM_COL32(220, 220, 220, 180),
+            4.0f,
+            0,
+            1.5f
+        );
+
+        // Three bulbs
+        drawList->AddCircleFilled(redPos, radius, redColor);
+        drawList->AddCircleFilled(yellowPos, radius, yellowColor);
+        drawList->AddCircleFilled(greenPos, radius, greenColor);
+
+        drawList->AddCircle(redPos, radius, IM_COL32(255, 255, 255, 120), 20, 1.0f);
+        drawList->AddCircle(yellowPos, radius, IM_COL32(255, 255, 255, 120), 20, 1.0f);
+        drawList->AddCircle(greenPos, radius, IM_COL32(255, 255, 255, 120), 20, 1.0f);
+
+        // Optional small pole
+        drawList->AddLine(
+            ImVec2(pos.x, pos.y + spacing + 12.0f),
+            ImVec2(pos.x, pos.y + spacing + 35.0f),
+            IM_COL32(180, 180, 180, 180),
+            2.0f
+        );
+    }
 }
 
 void Renderer::drawVehicles(const std::vector<Vehicle>& vehicles, bool isometricMode) {

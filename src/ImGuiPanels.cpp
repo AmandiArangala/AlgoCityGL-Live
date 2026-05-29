@@ -48,12 +48,12 @@ void ImGuiPanels::render() {
 
     ImGui::Separator();
 
-    ImGui::Text("Day 5 Status:");
-    ImGui::BulletText("Matrix3x3 transformation added");
-    ImGui::BulletText("Vehicle class added");
-    ImGui::BulletText("VehicleController added");
-    ImGui::BulletText("Vehicles loaded from JSON routes");
-    ImGui::BulletText("Play/Pause/Reset controls vehicle movement");
+    ImGui::Text("Day 6 Status:");
+    ImGui::BulletText("SignalController added");
+    ImGui::BulletText("Traffic lights change Red/Green/Yellow");
+    ImGui::BulletText("Vehicles stop near red lights");
+    ImGui::BulletText("Vehicles continue when signal changes");
+    ImGui::BulletText("Traffic lights rendered dynamically");
 
     ImGui::End();
 }

@@ -3,13 +3,14 @@
 #include <vector>
 #include "CityArea.h"
 #include "Matrix3x3.h"
+#include "SignalController.h"
 
 class Vehicle {
 public:
     Vehicle();
 
     void setRoute(const std::vector<Vec2>& routePoints);
-    void update(float deltaTime);
+    void update(float deltaTime, const std::vector<RuntimeTrafficLight>& trafficLights);
     void reset();
 
     const std::vector<Vec2>& getTransformedVertices() const;
@@ -17,6 +18,7 @@ public:
     Vec2 getPosition() const;
     float getAngle() const;
     float getSpeed() const;
+    bool getIsStopped() const;
     Matrix3x3 getTransformMatrix() const;
 
 private:
@@ -30,10 +32,13 @@ private:
 
     int currentTargetIndex;
     bool routeReady;
+    bool stoppedAtRedLight;
 
     Matrix3x3 transformMatrix;
 
     void updateTransform();
+    bool shouldStopForRedLight(const std::vector<RuntimeTrafficLight>& trafficLights) const;
+
     float distance(const Vec2& a, const Vec2& b) const;
     Vec2 normalize(const Vec2& v) const;
 };

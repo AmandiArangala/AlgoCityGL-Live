@@ -2,6 +2,7 @@
 #include <GLFW/glfw3.h>
 
 #include "Application.h"
+#include "SignalController.h"
 
 #include <stdexcept>
 #include <iostream>
@@ -89,14 +90,24 @@ void Application::run() {
 
             if (areaManager.loadAreaFromFile(filePath)) {
                 vehicleController.initializeFromArea(areaManager.getCurrentArea());
+                signalController.initializeFromArea(areaManager.getCurrentArea());
             }
         }
 
         if (imguiPanels.consumeResetRequest()) {
             vehicleController.reset();
+            signalController.reset();
         }
 
-        vehicleController.update(1.0f / 60.0f, imguiPanels.getIsPlaying());
+        if (imguiPanels.getIsPlaying()) {
+            signalController.update(1.0f / 60.0f);
+        }
+
+        vehicleController.update(
+            1.0f / 60.0f,
+            imguiPanels.getIsPlaying(),
+            signalController.getTrafficLights()
+        );
 
         renderer.renderBackground();
 
@@ -104,6 +115,7 @@ void Application::run() {
             renderer.renderCityArea(
                 areaManager.getCurrentArea(),
                 vehicleController.getVehicles(),
+                signalController.getTrafficLights(),
                 imguiPanels.getXRayMode(),
                 imguiPanels.getSelectedLineAlgorithm(),
                 imguiPanels.getIsometricMode()
