@@ -4,8 +4,8 @@
 
 #include "Renderer.h"
 #include "ImGuiPanels.h"
+#include "AreaManager.h"
 
-// Forward declaration instead of including GLFW here
 struct GLFWwindow;
 
 class Application {
@@ -24,8 +24,11 @@ private:
 
     Renderer renderer;
     ImGuiPanels imguiPanels;
+    AreaManager areaManager;
 
     bool initialize();
     void shutdown();
     void processInput();
+
+    std::string getAreaFilePath(int selectedArea) const;
 };

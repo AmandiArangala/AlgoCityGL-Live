@@ -19,6 +19,107 @@ void Renderer::renderDay2TestScene(bool xrayMode, int selectedLineAlgorithm) {
     drawPixelBuffer(xrayMode);
 }
 
+void Renderer::renderCityArea(const CityArea& area, bool xrayMode, int selectedLineAlgorithm) {
+    buildCityPixelScene(area, selectedLineAlgorithm, xrayMode);
+    drawPixelBuffer(xrayMode);
+}
+
+void Renderer::buildCityPixelScene(const CityArea& area, int selectedLineAlgorithm, bool xrayMode) {
+    pixelBuffer.clear();
+
+    Color roadColor(0.75f, 0.75f, 0.75f, 1.0f);
+    Color buildingColor(0.2f, 0.8f, 1.0f, 1.0f);
+    Color routeColor(1.0f, 0.9f, 0.1f, 1.0f);
+    Color crossingColor(1.0f, 1.0f, 1.0f, 1.0f);
+    Color signalRed(1.0f, 0.1f, 0.1f, 1.0f);
+
+    // Draw roads
+    for (const Road& road : area.roads) {
+        for (size_t i = 0; i + 1 < road.points.size(); i++) {
+            Vec2 a = road.points[i];
+            Vec2 b = road.points[i + 1];
+
+            if (selectedLineAlgorithm == 0) {
+                LineAlgorithms::drawLineDDA(
+                    pixelBuffer,
+                    static_cast<int>(a.x), static_cast<int>(a.y),
+                    static_cast<int>(b.x), static_cast<int>(b.y),
+                    roadColor
+                );
+            } else {
+                LineAlgorithms::drawLineBresenham(
+                    pixelBuffer,
+                    static_cast<int>(a.x), static_cast<int>(a.y),
+                    static_cast<int>(b.x), static_cast<int>(b.y),
+                    roadColor
+                );
+            }
+        }
+    }
+
+    // Draw vehicle routes only in X-Ray Mode
+    if (xrayMode) {
+        for (const VehicleRoute& route : area.routes) {
+            for (size_t i = 0; i + 1 < route.points.size(); i++) {
+                Vec2 a = route.points[i];
+                Vec2 b = route.points[i + 1];
+
+                LineAlgorithms::drawLineDDA(
+                    pixelBuffer,
+                    static_cast<int>(a.x), static_cast<int>(a.y),
+                    static_cast<int>(b.x), static_cast<int>(b.y),
+                    routeColor
+                );
+            }
+        }
+    }
+
+    // Draw building outlines
+    for (const Building& building : area.buildings) {
+        if (building.base.size() < 2) {
+            continue;
+        }
+
+        for (size_t i = 0; i < building.base.size(); i++) {
+            Vec2 a = building.base[i];
+            Vec2 b = building.base[(i + 1) % building.base.size()];
+
+            LineAlgorithms::drawLineBresenham(
+                pixelBuffer,
+                static_cast<int>(a.x), static_cast<int>(a.y),
+                static_cast<int>(b.x), static_cast<int>(b.y),
+                buildingColor
+            );
+        }
+    }
+
+    // Draw pedestrian crossings
+    for (const PedestrianCrossing& crossing : area.crossings) {
+        for (size_t i = 0; i + 1 < crossing.points.size(); i++) {
+            Vec2 a = crossing.points[i];
+            Vec2 b = crossing.points[i + 1];
+
+            LineAlgorithms::drawLineBresenham(
+                pixelBuffer,
+                static_cast<int>(a.x), static_cast<int>(a.y),
+                static_cast<int>(b.x), static_cast<int>(b.y),
+                crossingColor
+            );
+        }
+    }
+
+    // Draw traffic lights
+    for (const TrafficLight& light : area.trafficLights) {
+        CircleAlgorithms::drawCircleMidpoint(
+            pixelBuffer,
+            static_cast<int>(light.position.x),
+            static_cast<int>(light.position.y),
+            14,
+            signalRed
+        );
+    }
+}
+
 void Renderer::buildDay2PixelScene(int selectedLineAlgorithm) {
     pixelBuffer.clear();
 
@@ -71,7 +172,10 @@ void Renderer::drawPixelBuffer(bool xrayMode) {
         );
 
         ImVec2 p1(static_cast<float>(pixel.x), static_cast<float>(pixel.y));
-        ImVec2 p2(static_cast<float>(pixel.x) + pixelSize, static_cast<float>(pixel.y) + pixelSize);
+        ImVec2 p2(
+            static_cast<float>(pixel.x) + pixelSize,
+            static_cast<float>(pixel.y) + pixelSize
+        );
 
         drawList->AddRectFilled(p1, p2, color);
 
@@ -81,7 +185,10 @@ void Renderer::drawPixelBuffer(bool xrayMode) {
     }
 
     if (xrayMode) {
-        drawList->AddText(ImVec2(80, 650), IM_COL32(255, 255, 255, 255),
-            "X-Ray Mode: Each square is a manually calculated pixel.");
+        drawList->AddText(
+            ImVec2(80, 650),
+            IM_COL32(255, 255, 255, 255),
+            "X-Ray Mode: Layout is drawn from JSON using manual line/circle algorithms."
+        );
     }
 }

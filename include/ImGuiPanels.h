@@ -6,10 +6,14 @@ public:
 
     bool getXRayMode() const;
     int getSelectedLineAlgorithm() const;
+    int getSelectedArea() const;
+
+    bool consumeLoadAreaRequest();
 
 private:
     bool isPlaying = false;
     bool xrayMode = false;
+    bool loadAreaRequested = false;
 
     int selectedArea = 0;
     int selectedWeather = 0;
