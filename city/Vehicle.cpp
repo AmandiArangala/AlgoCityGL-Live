@@ -6,9 +6,9 @@ Vehicle::Vehicle()
       angleDegrees(0.0f),
       speed(80.0f),
       currentTargetIndex(1),
-      routeReady(false) {
+      routeReady(false),
+      stoppedAtRedLight(false) {
 
-    // Simple car shape centered around origin
     localVertices.push_back(Vec2(-18.0f, -10.0f));
     localVertices.push_back(Vec2(18.0f, -10.0f));
     localVertices.push_back(Vec2(18.0f, 10.0f));
@@ -24,6 +24,13 @@ void Vehicle::setRoute(const std::vector<Vec2>& routePoints) {
         position = route[0];
         currentTargetIndex = 1;
         routeReady = true;
+        stoppedAtRedLight = false;
+
+        Vec2 direction(route[1].x - route[0].x, route[1].y - route[0].y);
+
+        if (distance(route[0], route[1]) > 0.0f) {
+            angleDegrees = std::atan2(direction.y, direction.x) * 180.0f / 3.14159265f;
+        }
     } else {
         routeReady = false;
     }
@@ -36,15 +43,27 @@ void Vehicle::reset() {
         position = route[0];
         currentTargetIndex = 1;
         routeReady = true;
+        stoppedAtRedLight = false;
+
+        Vec2 direction(route[1].x - route[0].x, route[1].y - route[0].y);
+        angleDegrees = std::atan2(direction.y, direction.x) * 180.0f / 3.14159265f;
     }
 
     updateTransform();
 }
 
-void Vehicle::update(float deltaTime) {
+void Vehicle::update(float deltaTime, const std::vector<RuntimeTrafficLight>& trafficLights) {
     if (!routeReady || route.size() < 2) {
         return;
     }
+
+    if (shouldStopForRedLight(trafficLights)) {
+        stoppedAtRedLight = true;
+        updateTransform();
+        return;
+    }
+
+    stoppedAtRedLight = false;
 
     Vec2 target = route[currentTargetIndex];
     Vec2 direction(target.x - position.x, target.y - position.y);
@@ -72,12 +91,25 @@ void Vehicle::update(float deltaTime) {
     updateTransform();
 }
 
+bool Vehicle::shouldStopForRedLight(const std::vector<RuntimeTrafficLight>& trafficLights) const {
+    for (const RuntimeTrafficLight& light : trafficLights) {
+        float d = distance(position, light.baseLight.position);
+
+        bool nearLight = d < 45.0f;
+
+        if (nearLight && light.state == SignalState::Red) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 void Vehicle::updateTransform() {
     Matrix3x3 scale = Matrix3x3::scaling(1.0f, 1.0f);
     Matrix3x3 rotation = Matrix3x3::rotation(angleDegrees);
     Matrix3x3 translation = Matrix3x3::translation(position.x, position.y);
 
-    // Composite transformation: Translation × Rotation × Scaling
     transformMatrix = translation * rotation * scale;
 
     transformedVertices.clear();
@@ -118,6 +150,10 @@ float Vehicle::getAngle() const {
 
 float Vehicle::getSpeed() const {
     return speed;
+}
+
+bool Vehicle::getIsStopped() const {
+    return stoppedAtRedLight;
 }
 
 Matrix3x3 Vehicle::getTransformMatrix() const {

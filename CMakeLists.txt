@@ -26,6 +26,7 @@ add_executable(AlgoCityGL_Live
     city/Vehicle.cpp
 
     simulation/VehicleController.cpp
+    simulation/SignalController.cpp
 
     ${GLAD_DIR}/src/glad.c
 

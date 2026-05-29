@@ -5,6 +5,7 @@
 #include "PixelBuffer.h"
 #include "CityArea.h"
 #include "Vehicle.h"
+#include "SignalController.h"
 
 class Renderer {
 public:
@@ -16,6 +17,7 @@ public:
     void renderCityArea(
         const CityArea& area,
         const std::vector<Vehicle>& vehicles,
+        const std::vector<RuntimeTrafficLight>& trafficLights,
         bool xrayMode,
         int selectedLineAlgorithm,
         bool isometricMode
@@ -38,4 +40,9 @@ private:
     void drawPixelBuffer(bool xrayMode);
 
     void drawVehicles(const std::vector<Vehicle>& vehicles, bool isometricMode);
+
+    void drawRuntimeTrafficLights(
+        const std::vector<RuntimeTrafficLight>& trafficLights,
+        bool isometricMode
+    );
 };
