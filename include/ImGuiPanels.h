@@ -1,10 +1,11 @@
 #pragma once
 
-#include <string>
-
 class ImGuiPanels {
 public:
     void render();
+
+    bool getXRayMode() const;
+    int getSelectedLineAlgorithm() const;
 
 private:
     bool isPlaying = false;
@@ -12,6 +13,7 @@ private:
 
     int selectedArea = 0;
     int selectedWeather = 0;
+    int selectedLineAlgorithm = 0;
 
     const char* areas[3] = {
         "University of Moratuwa",
@@ -25,5 +27,10 @@ private:
         "Night",
         "Heavy Traffic",
         "Incident"
+    };
+
+    const char* lineAlgorithms[2] = {
+        "DDA",
+        "Bresenham"
     };
 };

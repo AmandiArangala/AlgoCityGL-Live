@@ -25,7 +25,7 @@ void ImGuiPanels::render() {
     ImGui::Combo("Selected Area", &selectedArea, areas, IM_ARRAYSIZE(areas));
 
     if (ImGui::Button("Load Area")) {
-        // Area loading will be implemented in Day 3.
+        // Area loading will be implemented later.
     }
 
     ImGui::Separator();
@@ -35,16 +35,27 @@ void ImGuiPanels::render() {
 
     ImGui::Separator();
 
+    ImGui::Text("Drawing Algorithm");
+    ImGui::Combo("Line Algorithm", &selectedLineAlgorithm, lineAlgorithms, IM_ARRAYSIZE(lineAlgorithms));
+
     ImGui::Checkbox("Algorithm X-Ray Mode", &xrayMode);
 
     ImGui::Separator();
 
-    ImGui::Text("Day 1 Status:");
-    ImGui::BulletText("OpenGL window working");
-    ImGui::BulletText("ImGui panel working");
-    ImGui::BulletText("Area selection placeholder ready");
-    ImGui::BulletText("Weather mode placeholder ready");
-    ImGui::BulletText("X-Ray mode placeholder ready");
+    ImGui::Text("Day 2 Status:");
+    ImGui::BulletText("Pixel plotting added");
+    ImGui::BulletText("DDA line algorithm added");
+    ImGui::BulletText("Bresenham line algorithm added");
+    ImGui::BulletText("Midpoint circle algorithm added");
+    ImGui::BulletText("Manual road/wheel test scene added");
 
     ImGui::End();
+}
+
+bool ImGuiPanels::getXRayMode() const {
+    return xrayMode;
+}
+
+int ImGuiPanels::getSelectedLineAlgorithm() const {
+    return selectedLineAlgorithm;
 }
