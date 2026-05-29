@@ -20,8 +20,12 @@ add_executable(AlgoCityGL_Live
     graphics/LineAlgorithms.cpp
     graphics/CircleAlgorithms.cpp
     graphics/Projection2_5D.cpp
+    graphics/Matrix3x3.cpp
 
     city/AreaManager.cpp
+    city/Vehicle.cpp
+
+    simulation/VehicleController.cpp
 
     ${GLAD_DIR}/src/glad.c
 
@@ -37,6 +41,7 @@ target_include_directories(AlgoCityGL_Live PRIVATE
     include
     graphics
     city
+    simulation
     external/json
     ${GLAD_DIR}/include
     ${GLFW_DIR}/include

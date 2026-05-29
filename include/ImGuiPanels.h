@@ -8,13 +8,16 @@ public:
     int getSelectedLineAlgorithm() const;
     int getSelectedArea() const;
     bool getIsometricMode() const;
+    bool getIsPlaying() const;
 
     bool consumeLoadAreaRequest();
+    bool consumeResetRequest();
 
 private:
     bool isPlaying = false;
     bool xrayMode = false;
     bool loadAreaRequested = false;
+    bool resetRequested = false;
 
     int selectedArea = 0;
     int selectedWeather = 0;

@@ -1,7 +1,10 @@
 #pragma once
 
+#include <vector>
+
 #include "PixelBuffer.h"
 #include "CityArea.h"
+#include "Vehicle.h"
 
 class Renderer {
 public:
@@ -12,6 +15,7 @@ public:
 
     void renderCityArea(
         const CityArea& area,
+        const std::vector<Vehicle>& vehicles,
         bool xrayMode,
         int selectedLineAlgorithm,
         bool isometricMode
@@ -32,4 +36,6 @@ private:
     Vec2 transformForView(const Vec2& point, bool isometricMode);
     void drawBuildingFills2_5D(const CityArea& area);
     void drawPixelBuffer(bool xrayMode);
+
+    void drawVehicles(const std::vector<Vehicle>& vehicles, bool isometricMode);
 };

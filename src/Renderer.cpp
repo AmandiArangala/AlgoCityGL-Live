@@ -22,6 +22,7 @@ void Renderer::renderDay2TestScene(bool xrayMode, int selectedLineAlgorithm) {
 
 void Renderer::renderCityArea(
     const CityArea& area,
+    const std::vector<Vehicle>& vehicles,
     bool xrayMode,
     int selectedLineAlgorithm,
     bool isometricMode
@@ -32,6 +33,8 @@ void Renderer::renderCityArea(
 
     buildCityPixelScene(area, selectedLineAlgorithm, xrayMode, isometricMode);
     drawPixelBuffer(xrayMode);
+
+    drawVehicles(vehicles, isometricMode);
 }
 
 Vec2 Renderer::transformForView(const Vec2& point, bool isometricMode) {
@@ -275,6 +278,39 @@ void Renderer::buildDay2PixelScene(int selectedLineAlgorithm) {
     CircleAlgorithms::drawCircleMidpoint(pixelBuffer, 900, 180, 18, lightColor);
     CircleAlgorithms::drawCircleMidpoint(pixelBuffer, 900, 230, 18, Color(1.0f, 1.0f, 0.1f, 1.0f));
     CircleAlgorithms::drawCircleMidpoint(pixelBuffer, 900, 280, 18, Color(0.1f, 1.0f, 0.1f, 1.0f));
+}
+
+void Renderer::drawVehicles(const std::vector<Vehicle>& vehicles, bool isometricMode) {
+    ImDrawList* drawList = ImGui::GetBackgroundDrawList();
+
+    for (const Vehicle& vehicle : vehicles) {
+        const std::vector<Vec2>& vertices = vehicle.getTransformedVertices();
+
+        if (vertices.size() < 3) {
+            continue;
+        }
+
+        std::vector<ImVec2> screenVertices;
+
+        for (const Vec2& vertex : vertices) {
+            Vec2 screenPoint = transformForView(vertex, isometricMode);
+            screenVertices.push_back(ImVec2(screenPoint.x, screenPoint.y));
+        }
+
+        drawList->AddConvexPolyFilled(
+            screenVertices.data(),
+            static_cast<int>(screenVertices.size()),
+            IM_COL32(255, 80, 40, 230)
+        );
+
+        drawList->AddPolyline(
+            screenVertices.data(),
+            static_cast<int>(screenVertices.size()),
+            IM_COL32(255, 255, 255, 255),
+            ImDrawFlags_Closed,
+            2.0f
+        );
+    }
 }
 
 void Renderer::drawPixelBuffer(bool xrayMode) {

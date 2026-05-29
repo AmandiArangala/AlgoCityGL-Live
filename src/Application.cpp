@@ -5,6 +5,7 @@
 
 #include <stdexcept>
 #include <iostream>
+#include <string>
 
 #include "imgui.h"
 #include "backends/imgui_impl_glfw.h"
@@ -85,14 +86,24 @@ void Application::run() {
 
         if (imguiPanels.consumeLoadAreaRequest()) {
             std::string filePath = getAreaFilePath(imguiPanels.getSelectedArea());
-            areaManager.loadAreaFromFile(filePath);
+
+            if (areaManager.loadAreaFromFile(filePath)) {
+                vehicleController.initializeFromArea(areaManager.getCurrentArea());
+            }
         }
+
+        if (imguiPanels.consumeResetRequest()) {
+            vehicleController.reset();
+        }
+
+        vehicleController.update(1.0f / 60.0f, imguiPanels.getIsPlaying());
 
         renderer.renderBackground();
 
         if (areaManager.hasLoadedArea()) {
             renderer.renderCityArea(
                 areaManager.getCurrentArea(),
+                vehicleController.getVehicles(),
                 imguiPanels.getXRayMode(),
                 imguiPanels.getSelectedLineAlgorithm(),
                 imguiPanels.getIsometricMode()

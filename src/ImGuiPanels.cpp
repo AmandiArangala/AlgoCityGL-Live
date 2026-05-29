@@ -17,6 +17,7 @@ void ImGuiPanels::render() {
 
     if (ImGui::Button("Reset")) {
         isPlaying = false;
+        resetRequested = true;
     }
 
     ImGui::Separator();
@@ -47,12 +48,12 @@ void ImGuiPanels::render() {
 
     ImGui::Separator();
 
-    ImGui::Text("Day 4 Status:");
-    ImGui::BulletText("2.5D projection added");
-    ImGui::BulletText("Top-down / 2.5D toggle added");
-    ImGui::BulletText("Building extrusion added");
-    ImGui::BulletText("Building faces and shadows added");
-    ImGui::BulletText("Roads projected into 2.5D");
+    ImGui::Text("Day 5 Status:");
+    ImGui::BulletText("Matrix3x3 transformation added");
+    ImGui::BulletText("Vehicle class added");
+    ImGui::BulletText("VehicleController added");
+    ImGui::BulletText("Vehicles loaded from JSON routes");
+    ImGui::BulletText("Play/Pause/Reset controls vehicle movement");
 
     ImGui::End();
 }
@@ -76,6 +77,19 @@ bool ImGuiPanels::getIsometricMode() const {
 bool ImGuiPanels::consumeLoadAreaRequest() {
     if (loadAreaRequested) {
         loadAreaRequested = false;
+        return true;
+    }
+
+    return false;
+}
+
+bool ImGuiPanels::getIsPlaying() const {
+    return isPlaying;
+}
+
+bool ImGuiPanels::consumeResetRequest() {
+    if (resetRequested) {
+        resetRequested = false;
         return true;
     }
 
