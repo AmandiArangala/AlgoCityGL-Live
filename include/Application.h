@@ -5,6 +5,7 @@
 #include "Renderer.h"
 #include "ImGuiPanels.h"
 #include "AreaManager.h"
+#include "VehicleController.h"
 
 struct GLFWwindow;
 
@@ -25,6 +26,7 @@ private:
     Renderer renderer;
     ImGuiPanels imguiPanels;
     AreaManager areaManager;
+    VehicleController vehicleController;
 
     bool initialize();
     void shutdown();

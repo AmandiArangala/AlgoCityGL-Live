@@ -3,6 +3,7 @@
 #include "Renderer.h"
 #include "LineAlgorithms.h"
 #include "CircleAlgorithms.h"
+#include "Projection2_5D.h"
 
 #include "imgui.h"
 
@@ -19,12 +20,95 @@ void Renderer::renderDay2TestScene(bool xrayMode, int selectedLineAlgorithm) {
     drawPixelBuffer(xrayMode);
 }
 
-void Renderer::renderCityArea(const CityArea& area, bool xrayMode, int selectedLineAlgorithm) {
-    buildCityPixelScene(area, selectedLineAlgorithm, xrayMode);
+void Renderer::renderCityArea(
+    const CityArea& area,
+    const std::vector<Vehicle>& vehicles,
+    bool xrayMode,
+    int selectedLineAlgorithm,
+    bool isometricMode
+) {
+    if (isometricMode) {
+        drawBuildingFills2_5D(area);
+    }
+
+    buildCityPixelScene(area, selectedLineAlgorithm, xrayMode, isometricMode);
     drawPixelBuffer(xrayMode);
+
+    drawVehicles(vehicles, isometricMode);
 }
 
-void Renderer::buildCityPixelScene(const CityArea& area, int selectedLineAlgorithm, bool xrayMode) {
+Vec2 Renderer::transformForView(const Vec2& point, bool isometricMode) {
+    if (isometricMode) {
+        return Projection2_5D::projectPoint(point);
+    }
+
+    return point;
+}
+
+void Renderer::drawBuildingFills2_5D(const CityArea& area) {
+    ImDrawList* drawList = ImGui::GetBackgroundDrawList();
+
+    for (const Building& building : area.buildings) {
+        if (building.base.size() < 3) {
+            continue;
+        }
+
+        std::vector<ImVec2> base;
+        std::vector<ImVec2> top;
+
+        for (const Vec2& point : building.base) {
+            Vec2 projected = Projection2_5D::projectPoint(point);
+            Vec2 projectedTop = Projection2_5D::shiftUp(projected, building.height);
+
+            base.push_back(ImVec2(projected.x, projected.y));
+            top.push_back(ImVec2(projectedTop.x, projectedTop.y));
+        }
+
+        // Shadow: simple shifted polygon
+        std::vector<ImVec2> shadow;
+        for (const ImVec2& p : base) {
+            shadow.push_back(ImVec2(p.x + 25.0f, p.y + 18.0f));
+        }
+
+        drawList->AddConvexPolyFilled(
+            shadow.data(),
+            static_cast<int>(shadow.size()),
+            IM_COL32(0, 0, 0, 80)
+        );
+
+        // Building side faces
+        for (size_t i = 0; i < base.size(); i++) {
+            size_t next = (i + 1) % base.size();
+
+            ImVec2 sideFace[4] = {
+                base[i],
+                base[next],
+                top[next],
+                top[i]
+            };
+
+            drawList->AddConvexPolyFilled(
+                sideFace,
+                4,
+                IM_COL32(40, 120, 160, 180)
+            );
+        }
+
+        // Building top face
+        drawList->AddConvexPolyFilled(
+            top.data(),
+            static_cast<int>(top.size()),
+            IM_COL32(80, 200, 240, 220)
+        );
+    }
+}
+
+void Renderer::buildCityPixelScene(
+    const CityArea& area,
+    int selectedLineAlgorithm,
+    bool xrayMode,
+    bool isometricMode
+) {
     pixelBuffer.clear();
 
     Color roadColor(0.75f, 0.75f, 0.75f, 1.0f);
@@ -36,8 +120,8 @@ void Renderer::buildCityPixelScene(const CityArea& area, int selectedLineAlgorit
     // Draw roads
     for (const Road& road : area.roads) {
         for (size_t i = 0; i + 1 < road.points.size(); i++) {
-            Vec2 a = road.points[i];
-            Vec2 b = road.points[i + 1];
+            Vec2 a = transformForView(road.points[i], isometricMode);
+            Vec2 b = transformForView(road.points[i + 1], isometricMode);
 
             if (selectedLineAlgorithm == 0) {
                 LineAlgorithms::drawLineDDA(
@@ -61,8 +145,8 @@ void Renderer::buildCityPixelScene(const CityArea& area, int selectedLineAlgorit
     if (xrayMode) {
         for (const VehicleRoute& route : area.routes) {
             for (size_t i = 0; i + 1 < route.points.size(); i++) {
-                Vec2 a = route.points[i];
-                Vec2 b = route.points[i + 1];
+                Vec2 a = transformForView(route.points[i], isometricMode);
+                Vec2 b = transformForView(route.points[i + 1], isometricMode);
 
                 LineAlgorithms::drawLineDDA(
                     pixelBuffer,
@@ -80,24 +164,67 @@ void Renderer::buildCityPixelScene(const CityArea& area, int selectedLineAlgorit
             continue;
         }
 
-        for (size_t i = 0; i < building.base.size(); i++) {
-            Vec2 a = building.base[i];
-            Vec2 b = building.base[(i + 1) % building.base.size()];
+        if (!isometricMode) {
+            // Top-down building outline
+            for (size_t i = 0; i < building.base.size(); i++) {
+                Vec2 a = building.base[i];
+                Vec2 b = building.base[(i + 1) % building.base.size()];
 
-            LineAlgorithms::drawLineBresenham(
-                pixelBuffer,
-                static_cast<int>(a.x), static_cast<int>(a.y),
-                static_cast<int>(b.x), static_cast<int>(b.y),
-                buildingColor
-            );
+                LineAlgorithms::drawLineBresenham(
+                    pixelBuffer,
+                    static_cast<int>(a.x), static_cast<int>(a.y),
+                    static_cast<int>(b.x), static_cast<int>(b.y),
+                    buildingColor
+                );
+            }
+        } else {
+            // 2.5D building wireframe outline
+            std::vector<Vec2> base;
+            std::vector<Vec2> top;
+
+            for (const Vec2& point : building.base) {
+                Vec2 projected = Projection2_5D::projectPoint(point);
+                Vec2 projectedTop = Projection2_5D::shiftUp(projected, building.height);
+
+                base.push_back(projected);
+                top.push_back(projectedTop);
+            }
+
+            for (size_t i = 0; i < base.size(); i++) {
+                size_t next = (i + 1) % base.size();
+
+                // base outline
+                LineAlgorithms::drawLineBresenham(
+                    pixelBuffer,
+                    static_cast<int>(base[i].x), static_cast<int>(base[i].y),
+                    static_cast<int>(base[next].x), static_cast<int>(base[next].y),
+                    buildingColor
+                );
+
+                // top outline
+                LineAlgorithms::drawLineBresenham(
+                    pixelBuffer,
+                    static_cast<int>(top[i].x), static_cast<int>(top[i].y),
+                    static_cast<int>(top[next].x), static_cast<int>(top[next].y),
+                    buildingColor
+                );
+
+                // vertical edge
+                LineAlgorithms::drawLineBresenham(
+                    pixelBuffer,
+                    static_cast<int>(base[i].x), static_cast<int>(base[i].y),
+                    static_cast<int>(top[i].x), static_cast<int>(top[i].y),
+                    buildingColor
+                );
+            }
         }
     }
 
     // Draw pedestrian crossings
     for (const PedestrianCrossing& crossing : area.crossings) {
         for (size_t i = 0; i + 1 < crossing.points.size(); i++) {
-            Vec2 a = crossing.points[i];
-            Vec2 b = crossing.points[i + 1];
+            Vec2 a = transformForView(crossing.points[i], isometricMode);
+            Vec2 b = transformForView(crossing.points[i + 1], isometricMode);
 
             LineAlgorithms::drawLineBresenham(
                 pixelBuffer,
@@ -110,10 +237,12 @@ void Renderer::buildCityPixelScene(const CityArea& area, int selectedLineAlgorit
 
     // Draw traffic lights
     for (const TrafficLight& light : area.trafficLights) {
+        Vec2 pos = transformForView(light.position, isometricMode);
+
         CircleAlgorithms::drawCircleMidpoint(
             pixelBuffer,
-            static_cast<int>(light.position.x),
-            static_cast<int>(light.position.y),
+            static_cast<int>(pos.x),
+            static_cast<int>(pos.y),
             14,
             signalRed
         );
@@ -129,33 +258,59 @@ void Renderer::buildDay2PixelScene(int selectedLineAlgorithm) {
     Color wheelColor(0.05f, 0.05f, 0.05f, 1.0f);
     Color lightColor(1.0f, 0.1f, 0.1f, 1.0f);
 
-    // Main road edge
     if (selectedLineAlgorithm == 0) {
         LineAlgorithms::drawLineDDA(pixelBuffer, 120, 500, 850, 250, roadColor);
     } else {
         LineAlgorithms::drawLineBresenham(pixelBuffer, 120, 500, 850, 250, roadColor);
     }
 
-    // Second road edge
     LineAlgorithms::drawLineBresenham(pixelBuffer, 120, 560, 850, 310, roadColor);
-
-    // Lane marking
     LineAlgorithms::drawLineDDA(pixelBuffer, 200, 520, 750, 330, laneColor);
 
-    // Simple building outline
     LineAlgorithms::drawLineBresenham(pixelBuffer, 600, 130, 760, 130, buildingColor);
     LineAlgorithms::drawLineBresenham(pixelBuffer, 760, 130, 760, 230, buildingColor);
     LineAlgorithms::drawLineBresenham(pixelBuffer, 760, 230, 600, 230, buildingColor);
     LineAlgorithms::drawLineBresenham(pixelBuffer, 600, 230, 600, 130, buildingColor);
 
-    // Vehicle wheels
     CircleAlgorithms::drawCircleMidpoint(pixelBuffer, 350, 450, 25, wheelColor);
     CircleAlgorithms::drawCircleMidpoint(pixelBuffer, 450, 420, 25, wheelColor);
 
-    // Traffic light bulbs
     CircleAlgorithms::drawCircleMidpoint(pixelBuffer, 900, 180, 18, lightColor);
     CircleAlgorithms::drawCircleMidpoint(pixelBuffer, 900, 230, 18, Color(1.0f, 1.0f, 0.1f, 1.0f));
     CircleAlgorithms::drawCircleMidpoint(pixelBuffer, 900, 280, 18, Color(0.1f, 1.0f, 0.1f, 1.0f));
+}
+
+void Renderer::drawVehicles(const std::vector<Vehicle>& vehicles, bool isometricMode) {
+    ImDrawList* drawList = ImGui::GetBackgroundDrawList();
+
+    for (const Vehicle& vehicle : vehicles) {
+        const std::vector<Vec2>& vertices = vehicle.getTransformedVertices();
+
+        if (vertices.size() < 3) {
+            continue;
+        }
+
+        std::vector<ImVec2> screenVertices;
+
+        for (const Vec2& vertex : vertices) {
+            Vec2 screenPoint = transformForView(vertex, isometricMode);
+            screenVertices.push_back(ImVec2(screenPoint.x, screenPoint.y));
+        }
+
+        drawList->AddConvexPolyFilled(
+            screenVertices.data(),
+            static_cast<int>(screenVertices.size()),
+            IM_COL32(255, 80, 40, 230)
+        );
+
+        drawList->AddPolyline(
+            screenVertices.data(),
+            static_cast<int>(screenVertices.size()),
+            IM_COL32(255, 255, 255, 255),
+            ImDrawFlags_Closed,
+            2.0f
+        );
+    }
 }
 
 void Renderer::drawPixelBuffer(bool xrayMode) {
@@ -188,7 +343,7 @@ void Renderer::drawPixelBuffer(bool xrayMode) {
         drawList->AddText(
             ImVec2(80, 650),
             IM_COL32(255, 255, 255, 255),
-            "X-Ray Mode: Layout is drawn from JSON using manual line/circle algorithms."
+            "X-Ray Mode: Layout is drawn using manual line/circle algorithms."
         );
     }
 }

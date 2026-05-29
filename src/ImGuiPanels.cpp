@@ -17,6 +17,7 @@ void ImGuiPanels::render() {
 
     if (ImGui::Button("Reset")) {
         isPlaying = false;
+        resetRequested = true;
     }
 
     ImGui::Separator();
@@ -27,6 +28,11 @@ void ImGuiPanels::render() {
     if (ImGui::Button("Load Area")) {
         loadAreaRequested = true;
     }
+
+    ImGui::Separator();
+
+    ImGui::Text("View Mode");
+    ImGui::Combo("City View", &selectedViewMode, viewModes, IM_ARRAYSIZE(viewModes));
 
     ImGui::Separator();
 
@@ -42,12 +48,12 @@ void ImGuiPanels::render() {
 
     ImGui::Separator();
 
-    ImGui::Text("Day 3 Status:");
-    ImGui::BulletText("Area JSON loading added");
-    ImGui::BulletText("Road data loading added");
-    ImGui::BulletText("Building data loading added");
-    ImGui::BulletText("Traffic signal data loading added");
-    ImGui::BulletText("Routes loading added");
+    ImGui::Text("Day 5 Status:");
+    ImGui::BulletText("Matrix3x3 transformation added");
+    ImGui::BulletText("Vehicle class added");
+    ImGui::BulletText("VehicleController added");
+    ImGui::BulletText("Vehicles loaded from JSON routes");
+    ImGui::BulletText("Play/Pause/Reset controls vehicle movement");
 
     ImGui::End();
 }
@@ -64,9 +70,26 @@ int ImGuiPanels::getSelectedArea() const {
     return selectedArea;
 }
 
+bool ImGuiPanels::getIsometricMode() const {
+    return selectedViewMode == 1;
+}
+
 bool ImGuiPanels::consumeLoadAreaRequest() {
     if (loadAreaRequested) {
         loadAreaRequested = false;
+        return true;
+    }
+
+    return false;
+}
+
+bool ImGuiPanels::getIsPlaying() const {
+    return isPlaying;
+}
+
+bool ImGuiPanels::consumeResetRequest() {
+    if (resetRequested) {
+        resetRequested = false;
         return true;
     }
 
