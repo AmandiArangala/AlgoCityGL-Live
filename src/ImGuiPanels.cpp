@@ -30,6 +30,11 @@ void ImGuiPanels::render() {
 
     ImGui::Separator();
 
+    ImGui::Text("View Mode");
+    ImGui::Combo("City View", &selectedViewMode, viewModes, IM_ARRAYSIZE(viewModes));
+
+    ImGui::Separator();
+
     ImGui::Text("Live Context Mode");
     ImGui::Combo("Weather / Traffic Mode", &selectedWeather, weatherModes, IM_ARRAYSIZE(weatherModes));
 
@@ -42,12 +47,12 @@ void ImGuiPanels::render() {
 
     ImGui::Separator();
 
-    ImGui::Text("Day 3 Status:");
-    ImGui::BulletText("Area JSON loading added");
-    ImGui::BulletText("Road data loading added");
-    ImGui::BulletText("Building data loading added");
-    ImGui::BulletText("Traffic signal data loading added");
-    ImGui::BulletText("Routes loading added");
+    ImGui::Text("Day 4 Status:");
+    ImGui::BulletText("2.5D projection added");
+    ImGui::BulletText("Top-down / 2.5D toggle added");
+    ImGui::BulletText("Building extrusion added");
+    ImGui::BulletText("Building faces and shadows added");
+    ImGui::BulletText("Roads projected into 2.5D");
 
     ImGui::End();
 }
@@ -62,6 +67,10 @@ int ImGuiPanels::getSelectedLineAlgorithm() const {
 
 int ImGuiPanels::getSelectedArea() const {
     return selectedArea;
+}
+
+bool ImGuiPanels::getIsometricMode() const {
+    return selectedViewMode == 1;
 }
 
 bool ImGuiPanels::consumeLoadAreaRequest() {

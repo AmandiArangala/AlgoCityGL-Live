@@ -19,6 +19,7 @@ add_executable(AlgoCityGL_Live
     graphics/PixelBuffer.cpp
     graphics/LineAlgorithms.cpp
     graphics/CircleAlgorithms.cpp
+    graphics/Projection2_5D.cpp
 
     city/AreaManager.cpp
 

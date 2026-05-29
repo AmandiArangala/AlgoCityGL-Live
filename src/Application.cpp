@@ -94,7 +94,8 @@ void Application::run() {
             renderer.renderCityArea(
                 areaManager.getCurrentArea(),
                 imguiPanels.getXRayMode(),
-                imguiPanels.getSelectedLineAlgorithm()
+                imguiPanels.getSelectedLineAlgorithm(),
+                imguiPanels.getIsometricMode()
             );
         } else {
             renderer.renderDay2TestScene(
