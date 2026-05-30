@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <string>
 
 #include "PixelBuffer.h"
 #include "CityArea.h"
@@ -77,6 +78,32 @@ private:
         const std::vector<Vehicle>& vehicles,
         const std::vector<RuntimeTrafficLight>& trafficLights,
         int selectedLineAlgorithm,
+        bool isometricMode,
+        const Camera2D& camera
+    );
+
+    void drawBuildingLabels(
+        const CityArea& area,
+        bool isometricMode,
+        const Camera2D& camera
+    );
+
+    void drawRoadLabels(
+        const CityArea& area,
+        bool isometricMode,
+        const Camera2D& camera
+    );
+
+    bool shouldShowLabel(const std::string& name);
+
+    Vec2 getPolygonCenter(
+        const std::vector<Vec2>& points,
+        bool isometricMode,
+        const Camera2D& camera
+    );
+
+    Vec2 getRoadLabelPoint(
+        const Road& road,
         bool isometricMode,
         const Camera2D& camera
     );

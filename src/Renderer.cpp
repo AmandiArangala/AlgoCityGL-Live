@@ -10,6 +10,7 @@
 
 #include <vector>
 #include <cstdio>
+#include <string>
 
 void Renderer::initialize() {
     glClearColor(0.08f, 0.10f, 0.13f, 1.0f);
@@ -58,6 +59,8 @@ void Renderer::renderCityArea(
     drawRuntimeTrafficLights(trafficLights, isometricMode, camera);
     drawVehicles(vehicles, isometricMode, camera);
     drawMiniMap(area, vehicles, camera);
+    drawRoadLabels(area, isometricMode, camera);
+    drawBuildingLabels(area, isometricMode, camera);
 
     if (liveContext.isRainMode()) {
         drawRainEffect();
@@ -774,6 +777,195 @@ void Renderer::drawXRayDashboard(
 
     std::snprintf(buffer, sizeof(buffer), "Camera Zoom: %.2f", camera.getZoom());
     drawList->AddText(ImVec2(panelPos.x + 12, panelPos.y + 192), IM_COL32(180, 220, 255, 255), buffer);
+}
+
+bool Renderer::shouldShowLabel(const std::string& name) {
+    if (name.empty()) {
+        return false;
+    }
+
+    // Hide automatically generated names.
+    if (name.rfind("Building ", 0) == 0) {
+        return false;
+    }
+
+    if (name.rfind("Road ", 0) == 0) {
+        return false;
+    }
+
+    // Avoid very long labels cluttering the screen too much.
+    if (name.length() > 38) {
+        return false;
+    }
+
+    return true;
+}
+
+Vec2 Renderer::getPolygonCenter(
+    const std::vector<Vec2>& points,
+    bool isometricMode,
+    const Camera2D& camera
+) {
+    Vec2 center(0.0f, 0.0f);
+
+    if (points.empty()) {
+        return center;
+    }
+
+    for (const Vec2& point : points) {
+        center.x += point.x;
+        center.y += point.y;
+    }
+
+    center.x /= static_cast<float>(points.size());
+    center.y /= static_cast<float>(points.size());
+
+    center = transformForView(center, isometricMode);
+    center = applyCamera(center, camera);
+
+    return center;
+}
+
+Vec2 Renderer::getRoadLabelPoint(
+    const Road& road,
+    bool isometricMode,
+    const Camera2D& camera
+) {
+    if (road.points.empty()) {
+        return Vec2(0.0f, 0.0f);
+    }
+
+    Vec2 point = road.points[road.points.size() / 2];
+
+    point = transformForView(point, isometricMode);
+    point = applyCamera(point, camera);
+
+    return point;
+}
+
+void Renderer::drawBuildingLabels(
+    const CityArea& area,
+    bool isometricMode,
+    const Camera2D& camera
+) {
+    ImDrawList* drawList = ImGui::GetBackgroundDrawList();
+
+    int shownLabels = 0;
+    const int maxLabels = 14;
+
+    for (const Building& building : area.buildings) {
+        if (!shouldShowLabel(building.name)) {
+            continue;
+        }
+
+        Vec2 pos = getPolygonCenter(building.base, isometricMode, camera);
+
+        // Move label slightly above the building.
+        pos.y -= (18.0f * camera.getZoom());
+
+        const char* text = building.name.c_str();
+
+        ImVec2 textSize = ImGui::CalcTextSize(text);
+
+        ImVec2 boxMin(
+            pos.x - textSize.x * 0.5f - 5.0f,
+            pos.y - 4.0f
+        );
+
+        ImVec2 boxMax(
+            pos.x + textSize.x * 0.5f + 5.0f,
+            pos.y + textSize.y + 4.0f
+        );
+
+        drawList->AddRectFilled(
+            boxMin,
+            boxMax,
+            IM_COL32(5, 15, 20, 190),
+            4.0f
+        );
+
+        drawList->AddRect(
+            boxMin,
+            boxMax,
+            IM_COL32(80, 210, 255, 180),
+            4.0f,
+            0,
+            1.0f
+        );
+
+        drawList->AddText(
+            ImVec2(pos.x - textSize.x * 0.5f, pos.y),
+            IM_COL32(230, 250, 255, 255),
+            text
+        );
+
+        shownLabels++;
+
+        if (shownLabels >= maxLabels) {
+            break;
+        }
+    }
+}
+
+void Renderer::drawRoadLabels(
+    const CityArea& area,
+    bool isometricMode,
+    const Camera2D& camera
+) {
+    ImDrawList* drawList = ImGui::GetBackgroundDrawList();
+
+    int shownLabels = 0;
+    const int maxLabels = 8;
+
+    for (const Road& road : area.roads) {
+        if (!shouldShowLabel(road.name)) {
+            continue;
+        }
+
+        Vec2 pos = getRoadLabelPoint(road, isometricMode, camera);
+
+        const char* text = road.name.c_str();
+
+        ImVec2 textSize = ImGui::CalcTextSize(text);
+
+        ImVec2 boxMin(
+            pos.x - textSize.x * 0.5f - 5.0f,
+            pos.y - 20.0f
+        );
+
+        ImVec2 boxMax(
+            pos.x + textSize.x * 0.5f + 5.0f,
+            pos.y - 20.0f + textSize.y + 8.0f
+        );
+
+        drawList->AddRectFilled(
+            boxMin,
+            boxMax,
+            IM_COL32(35, 35, 20, 180),
+            4.0f
+        );
+
+        drawList->AddRect(
+            boxMin,
+            boxMax,
+            IM_COL32(255, 230, 100, 180),
+            4.0f,
+            0,
+            1.0f
+        );
+
+        drawList->AddText(
+            ImVec2(pos.x - textSize.x * 0.5f, pos.y - 16.0f),
+            IM_COL32(255, 240, 150, 255),
+            text
+        );
+
+        shownLabels++;
+
+        if (shownLabels >= maxLabels) {
+            break;
+        }
+    }
 }
 
 void Renderer::buildDay2PixelScene(int selectedLineAlgorithm) {
