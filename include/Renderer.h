@@ -107,4 +107,28 @@ private:
         bool isometricMode,
         const Camera2D& camera
     );
+
+    void drawEnvironmentDetails(
+        const CityArea& area,
+        bool isometricMode,
+        const Camera2D& camera
+    );
+
+    void drawTrees(
+        const CityArea& area,
+        bool isometricMode,
+        const Camera2D& camera
+    );
+
+    void drawBuildingWindows(
+        const CityArea& area,
+        bool isometricMode,
+        const Camera2D& camera
+    );
+
+    void drawStopLines(
+        const std::vector<RuntimeTrafficLight>& trafficLights,
+        bool isometricMode,
+        const Camera2D& camera
+    );
 };
