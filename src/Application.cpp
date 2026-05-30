@@ -84,6 +84,7 @@ void Application::run() {
         ImGui::NewFrame();
 
         imguiPanels.render();
+        liveContextEngine.setMode(imguiPanels.getSelectedWeatherMode());
 
         if (imguiPanels.consumeLoadAreaRequest()) {
             std::string filePath = getAreaFilePath(imguiPanels.getSelectedArea());
@@ -104,7 +105,7 @@ void Application::run() {
         }
 
         vehicleController.update(
-            1.0f / 60.0f,
+            (1.0f / 60.0f) * liveContextEngine.getVehicleSpeedMultiplier(),
             imguiPanels.getIsPlaying(),
             signalController.getTrafficLights()
         );
@@ -116,6 +117,7 @@ void Application::run() {
                 areaManager.getCurrentArea(),
                 vehicleController.getVehicles(),
                 signalController.getTrafficLights(),
+                liveContextEngine,
                 imguiPanels.getXRayMode(),
                 imguiPanels.getSelectedLineAlgorithm(),
                 imguiPanels.getIsometricMode(),

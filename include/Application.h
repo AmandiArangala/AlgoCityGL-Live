@@ -8,6 +8,7 @@
 #include "VehicleController.h"
 #include "SignalController.h"
 #include "Camera2D.h"
+#include "LiveContextEngine.h"
 
 struct GLFWwindow;
 
@@ -31,6 +32,7 @@ private:
     VehicleController vehicleController;
     SignalController signalController;
     Camera2D camera;
+    LiveContextEngine liveContextEngine;
 
     bool initialize();
     void shutdown();

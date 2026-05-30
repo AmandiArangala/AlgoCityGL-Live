@@ -48,12 +48,13 @@ void ImGuiPanels::render() {
 
     ImGui::Separator();
 
-    ImGui::Text("Day 8 Status:");
-    ImGui::BulletText("Camera pan added: W/A/S/D");
-    ImGui::BulletText("Zoom added: Q/E");
-    ImGui::BulletText("Camera reset added: C");
-    ImGui::BulletText("Mini-map added");
-    ImGui::BulletText("World-to-screen mapping introduced");
+    ImGui::Text("Day 9 Status:");
+    ImGui::BulletText("Live context modes added");
+    ImGui::BulletText("Rain mode visual effect added");
+    ImGui::BulletText("Night mode visual effect added");
+    ImGui::BulletText("Heavy traffic mode added");
+    ImGui::BulletText("Incident mode added");
+    ImGui::BulletText("X-Ray theory dashboard added");
 
     ImGui::Separator();
     ImGui::Text("Camera Controls:");
@@ -100,4 +101,8 @@ bool ImGuiPanels::consumeResetRequest() {
     }
 
     return false;
+}
+
+int ImGuiPanels::getSelectedWeatherMode() const {
+    return selectedWeather;
 }

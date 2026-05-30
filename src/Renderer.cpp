@@ -28,11 +28,14 @@ void Renderer::renderCityArea(
     const CityArea& area,
     const std::vector<Vehicle>& vehicles,
     const std::vector<RuntimeTrafficLight>& trafficLights,
+    const LiveContextEngine& liveContext,
     bool xrayMode,
     int selectedLineAlgorithm,
     bool isometricMode,
     const Camera2D& camera
 ) {
+    drawLiveContextOverlay(liveContext);
+
     if (isometricMode) {
         drawIsometricRoadFills(area, camera);
         drawBuildingFills2_5D(area, camera);
@@ -41,12 +44,35 @@ void Renderer::renderCityArea(
         drawTopDownBuildingFills(area, camera);
     }
 
+    if (liveContext.isNightMode()) {
+        drawNightEffect(area, isometricMode, camera);
+    }
+
+    if (liveContext.isIncidentMode()) {
+        drawIncidentMarker(isometricMode, camera);
+    }
+
     buildCityPixelScene(area, selectedLineAlgorithm, xrayMode, isometricMode, camera);
     drawPixelBuffer(xrayMode);
 
     drawRuntimeTrafficLights(trafficLights, isometricMode, camera);
     drawVehicles(vehicles, isometricMode, camera);
     drawMiniMap(area, vehicles, camera);
+
+    if (liveContext.isRainMode()) {
+        drawRainEffect();
+    }
+
+    if (xrayMode) {
+        drawXRayDashboard(
+            area,
+            vehicles,
+            trafficLights,
+            selectedLineAlgorithm,
+            isometricMode,
+            camera
+        );
+    }
 }
 
 Vec2 Renderer::transformForView(const Vec2& point, bool isometricMode) {
@@ -583,6 +609,171 @@ void Renderer::drawMiniMap(
         IM_COL32(220, 220, 220, 255),
         buffer
     );
+}
+
+void Renderer::drawLiveContextOverlay(const LiveContextEngine& liveContext) {
+    ImDrawList* drawList = ImGui::GetBackgroundDrawList();
+
+    ImVec2 displaySize = ImGui::GetIO().DisplaySize;
+
+    if (liveContext.isNightMode()) {
+        drawList->AddRectFilled(
+            ImVec2(0, 0),
+            displaySize,
+            IM_COL32(0, 0, 25, 90)
+        );
+    }
+
+    if (liveContext.isRainMode()) {
+        drawList->AddRectFilled(
+            ImVec2(0, 0),
+            displaySize,
+            IM_COL32(20, 30, 45, 70)
+        );
+    }
+
+    if (liveContext.isHeavyTrafficMode()) {
+        drawList->AddText(
+            ImVec2(20, 20),
+            IM_COL32(255, 180, 60, 255),
+            "Live Context: Heavy Traffic - vehicles slowed"
+        );
+    }
+
+    if (liveContext.isIncidentMode()) {
+        drawList->AddText(
+            ImVec2(20, 20),
+            IM_COL32(255, 80, 80, 255),
+            "Live Context: Incident Mode - slow/blocked area active"
+        );
+    }
+}
+
+void Renderer::drawRainEffect() {
+    ImDrawList* drawList = ImGui::GetBackgroundDrawList();
+
+    ImVec2 displaySize = ImGui::GetIO().DisplaySize;
+
+    for (int i = 0; i < 90; i++) {
+        float x = static_cast<float>((i * 97) % static_cast<int>(displaySize.x));
+        float y = static_cast<float>((i * 53) % static_cast<int>(displaySize.y));
+
+        drawList->AddLine(
+            ImVec2(x, y),
+            ImVec2(x - 8.0f, y + 20.0f),
+            IM_COL32(150, 190, 255, 120),
+            1.2f
+        );
+    }
+}
+
+void Renderer::drawNightEffect(const CityArea& area, bool isometricMode, const Camera2D& camera) {
+    ImDrawList* drawList = ImGui::GetBackgroundDrawList();
+
+    for (const Building& building : area.buildings) {
+        if (building.base.empty()) {
+            continue;
+        }
+
+        Vec2 center(0.0f, 0.0f);
+
+        for (const Vec2& p : building.base) {
+            center.x += p.x;
+            center.y += p.y;
+        }
+
+        center.x /= static_cast<float>(building.base.size());
+        center.y /= static_cast<float>(building.base.size());
+
+        center = transformForView(center, isometricMode);
+        center = applyCamera(center, camera);
+
+        drawList->AddCircleFilled(
+            ImVec2(center.x, center.y),
+            5.0f * camera.getZoom(),
+            IM_COL32(255, 230, 120, 180)
+        );
+    }
+}
+
+void Renderer::drawIncidentMarker(bool isometricMode, const Camera2D& camera) {
+    Vec2 incidentPoint(430.0f, 410.0f);
+
+    Vec2 p = transformForView(incidentPoint, isometricMode);
+    p = applyCamera(p, camera);
+
+    ImDrawList* drawList = ImGui::GetBackgroundDrawList();
+
+    drawList->AddCircleFilled(
+        ImVec2(p.x, p.y),
+        22.0f * camera.getZoom(),
+        IM_COL32(255, 40, 40, 90)
+    );
+
+    drawList->AddTriangleFilled(
+        ImVec2(p.x, p.y - 25.0f),
+        ImVec2(p.x - 22.0f, p.y + 18.0f),
+        ImVec2(p.x + 22.0f, p.y + 18.0f),
+        IM_COL32(255, 180, 30, 220)
+    );
+
+    drawList->AddText(
+        ImVec2(p.x - 18.0f, p.y - 5.0f),
+        IM_COL32(0, 0, 0, 255),
+        "!"
+    );
+}
+
+void Renderer::drawXRayDashboard(
+    const CityArea& area,
+    const std::vector<Vehicle>& vehicles,
+    const std::vector<RuntimeTrafficLight>& trafficLights,
+    int selectedLineAlgorithm,
+    bool isometricMode,
+    const Camera2D& camera
+) {
+    ImDrawList* drawList = ImGui::GetBackgroundDrawList();
+
+    ImVec2 panelPos(20.0f, 80.0f);
+    ImVec2 panelSize(360.0f, 210.0f);
+
+    drawList->AddRectFilled(
+        panelPos,
+        ImVec2(panelPos.x + panelSize.x, panelPos.y + panelSize.y),
+        IM_COL32(10, 15, 20, 230),
+        8.0f
+    );
+
+    drawList->AddRect(
+        panelPos,
+        ImVec2(panelPos.x + panelSize.x, panelPos.y + panelSize.y),
+        IM_COL32(120, 200, 255, 220),
+        8.0f,
+        0,
+        2.0f
+    );
+
+    const char* lineAlgorithm = selectedLineAlgorithm == 0 ? "DDA Line Algorithm" : "Bresenham Line Algorithm";
+    const char* viewMode = isometricMode ? "2.5D Isometric Projection" : "Top-Down 2D View";
+
+    drawList->AddText(ImVec2(panelPos.x + 12, panelPos.y + 12), IM_COL32(255, 255, 255, 255), "Algorithm X-Ray Dashboard");
+
+    drawList->AddText(ImVec2(panelPos.x + 12, panelPos.y + 42), IM_COL32(230, 230, 230, 255), lineAlgorithm);
+    drawList->AddText(ImVec2(panelPos.x + 12, panelPos.y + 62), IM_COL32(230, 230, 230, 255), "Circle: Midpoint Circle Algorithm");
+    drawList->AddText(ImVec2(panelPos.x + 12, panelPos.y + 82), IM_COL32(230, 230, 230, 255), "Fill: Scan-line Polygon Fill");
+    drawList->AddText(ImVec2(panelPos.x + 12, panelPos.y + 102), IM_COL32(230, 230, 230, 255), viewMode);
+    drawList->AddText(ImVec2(panelPos.x + 12, panelPos.y + 122), IM_COL32(230, 230, 230, 255), "Transform: Translation x Rotation x Scaling");
+
+    char buffer[128];
+
+    std::snprintf(buffer, sizeof(buffer), "Roads: %d  Buildings: %d", static_cast<int>(area.roads.size()), static_cast<int>(area.buildings.size()));
+    drawList->AddText(ImVec2(panelPos.x + 12, panelPos.y + 152), IM_COL32(180, 220, 255, 255), buffer);
+
+    std::snprintf(buffer, sizeof(buffer), "Vehicles: %d  Signals: %d", static_cast<int>(vehicles.size()), static_cast<int>(trafficLights.size()));
+    drawList->AddText(ImVec2(panelPos.x + 12, panelPos.y + 172), IM_COL32(180, 220, 255, 255), buffer);
+
+    std::snprintf(buffer, sizeof(buffer), "Camera Zoom: %.2f", camera.getZoom());
+    drawList->AddText(ImVec2(panelPos.x + 12, panelPos.y + 192), IM_COL32(180, 220, 255, 255), buffer);
 }
 
 void Renderer::buildDay2PixelScene(int selectedLineAlgorithm) {

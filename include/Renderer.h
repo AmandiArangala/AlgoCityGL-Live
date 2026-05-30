@@ -7,6 +7,7 @@
 #include "Vehicle.h"
 #include "SignalController.h"
 #include "Camera2D.h"
+#include "LiveContextEngine.h"
 
 class Renderer {
 public:
@@ -19,6 +20,7 @@ public:
         const CityArea& area,
         const std::vector<Vehicle>& vehicles,
         const std::vector<RuntimeTrafficLight>& trafficLights,
+        const LiveContextEngine& liveContextEngine,
         bool xrayMode,
         int selectedLineAlgorithm,
         bool isometricMode,
@@ -65,4 +67,17 @@ private:
     );
 
     void drawPixelBuffer(bool xrayMode);
+
+    void drawLiveContextOverlay(const LiveContextEngine& liveContext);
+    void drawRainEffect();
+    void drawNightEffect(const CityArea& area, bool isometricMode, const Camera2D& camera);
+    void drawIncidentMarker(bool isometricMode, const Camera2D& camera);
+    void drawXRayDashboard(
+        const CityArea& area,
+        const std::vector<Vehicle>& vehicles,
+        const std::vector<RuntimeTrafficLight>& trafficLights,
+        int selectedLineAlgorithm,
+        bool isometricMode,
+        const Camera2D& camera
+    );
 };

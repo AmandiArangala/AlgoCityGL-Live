@@ -27,6 +27,8 @@ add_executable(AlgoCityGL_Live
     city/AreaManager.cpp
     city/Vehicle.cpp
 
+    live/LiveContextEngine.cpp
+
     simulation/VehicleController.cpp
     simulation/SignalController.cpp
 
@@ -45,6 +47,7 @@ target_include_directories(AlgoCityGL_Live PRIVATE
     graphics
     city
     simulation
+    live
     external/json
     ${GLAD_DIR}/include
     ${GLFW_DIR}/include

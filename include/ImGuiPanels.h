@@ -7,6 +7,7 @@ public:
     bool getXRayMode() const;
     int getSelectedLineAlgorithm() const;
     int getSelectedArea() const;
+    int getSelectedWeatherMode() const;
     bool getIsometricMode() const;
     bool getIsPlaying() const;
 
