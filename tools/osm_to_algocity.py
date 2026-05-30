@@ -1,18 +1,20 @@
 import json
 from pathlib import Path
 
-INPUT_FILE = Path("../data/osm/moratuwa_raw_osm.json")
-OUTPUT_FILE = Path("../data/moratuwa_area_real.json")
-
-SCALE = 90000
-OFFSET_X = 500
-OFFSET_Y = 350
-
-MAX_ROADS = 30
-MAX_BUILDINGS = 70
-MAX_SIGNALS = 6
-MAX_CROSSINGS = 12
-
+AREA_CONFIGS = [
+    {
+        "area_name": "University of Moratuwa Real GeoJSON Area",
+        "input_file": Path("../data/osm/moratuwa_raw_osm.json"),
+        "output_file": Path("../data/moratuwa_area_real.json"),
+        "scale": 90000,
+        "offset_x": 500,
+        "offset_y": 350,
+        "max_roads": 30,
+        "max_buildings": 35,
+        "max_signals": 6,
+        "max_crossings": 12
+    }
+]
 
 def load_geojson(path):
     with open(path, "r", encoding="utf-8") as f:
@@ -271,12 +273,29 @@ def convert_crossings(features, center_lat, center_lon):
 def generate_routes_from_roads(roads):
     routes = []
 
-    for index, road in enumerate(roads[:6], start=1):
-        if len(road["points"]) >= 2:
-            routes.append({
-                "id": f"route_{index}",
-                "points": road["points"]
-            })
+    route_index = 1
+
+    for road in roads:
+        points = road.get("points", [])
+
+        if len(points) < 2:
+            continue
+
+        # Forward route
+        routes.append({
+            "id": f"route_{route_index}",
+            "points": points
+        })
+        route_index += 1
+
+        # Reverse route, so cars can appear in both directions
+        reversed_points = list(reversed(points))
+
+        routes.append({
+            "id": f"route_{route_index}",
+            "points": reversed_points
+        })
+        route_index += 1
 
     return routes
 
@@ -299,16 +318,38 @@ def add_fallback_signals(traffic_lights, roads):
     return signals
 
 
-def main():
-    geojson = load_geojson(INPUT_FILE)
+def convert_area(config):
+    global SCALE, OFFSET_X, OFFSET_Y
+    global MAX_ROADS, MAX_BUILDINGS, MAX_SIGNALS, MAX_CROSSINGS
+
+    area_name = config["area_name"]
+    input_file = config["input_file"]
+    output_file = config["output_file"]
+
+    SCALE = config["scale"]
+    OFFSET_X = config["offset_x"]
+    OFFSET_Y = config["offset_y"]
+
+    MAX_ROADS = config["max_roads"]
+    MAX_BUILDINGS = config["max_buildings"]
+    MAX_SIGNALS = config["max_signals"]
+    MAX_CROSSINGS = config["max_crossings"]
+
+    if not input_file.exists():
+        print(f"SKIPPED: {area_name}")
+        print(f"Missing input file: {input_file}")
+        print()
+        return
+
+    geojson = load_geojson(input_file)
 
     if geojson.get("type") != "FeatureCollection":
-        raise RuntimeError("This converter expects GeoJSON FeatureCollection format.")
+        raise RuntimeError(f"{input_file} is not GeoJSON FeatureCollection format.")
 
     features = geojson.get("features", [])
 
     if not features:
-        raise RuntimeError("No features found in GeoJSON file.")
+        raise RuntimeError(f"No features found in {input_file}")
 
     coords = collect_all_coordinates(features)
     center_lat, center_lon = find_center(coords)
@@ -322,7 +363,7 @@ def main():
     traffic_lights = add_fallback_signals(traffic_lights, roads)
 
     output = {
-        "name": "University of Moratuwa Real GeoJSON Area",
+        "name": area_name,
         "latitude": center_lat,
         "longitude": center_lon,
         "defaultTrafficLevel": "MODERATE",
@@ -333,16 +374,23 @@ def main():
         "routes": routes
     }
 
-    with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
+    with open(output_file, "w", encoding="utf-8") as f:
         json.dump(output, f, indent=2)
 
-    print("Converted GeoJSON data successfully.")
+    print(f"Converted: {area_name}")
+    print(f"Input: {input_file}")
+    print(f"Output: {output_file}")
     print(f"Roads: {len(roads)}")
     print(f"Buildings: {len(buildings)}")
     print(f"Traffic lights: {len(traffic_lights)}")
     print(f"Crossings: {len(crossings)}")
     print(f"Routes: {len(routes)}")
-    print(f"Saved to: {OUTPUT_FILE}")
+    print()
+
+
+def main():
+    for config in AREA_CONFIGS:
+        convert_area(config)
 
 
 if __name__ == "__main__":

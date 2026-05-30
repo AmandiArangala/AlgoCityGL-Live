@@ -11,6 +11,7 @@
 #include <vector>
 #include <cstdio>
 #include <string>
+#include <cmath>
 
 void Renderer::initialize() {
     glClearColor(0.08f, 0.10f, 0.13f, 1.0f);
@@ -56,9 +57,15 @@ void Renderer::renderCityArea(
     buildCityPixelScene(area, selectedLineAlgorithm, xrayMode, isometricMode, camera);
     drawPixelBuffer(xrayMode);
 
+    drawEnvironmentDetails(area, isometricMode, camera);
+    drawTrees(area, isometricMode, camera);
+    drawBuildingWindows(area, isometricMode, camera);
+    drawStopLines(trafficLights, isometricMode, camera);
+
     drawRuntimeTrafficLights(trafficLights, isometricMode, camera);
     drawVehicles(vehicles, isometricMode, camera);
     drawMiniMap(area, vehicles, camera);
+
     drawRoadLabels(area, isometricMode, camera);
     drawBuildingLabels(area, isometricMode, camera);
 
@@ -441,10 +448,19 @@ void Renderer::drawVehicles(
 ) {
     ImDrawList* drawList = ImGui::GetBackgroundDrawList();
 
+    auto lerp = [](const ImVec2& a, const ImVec2& b, float t) {
+        return ImVec2(
+            a.x + (b.x - a.x) * t,
+            a.y + (b.y - a.y) * t
+        );
+    };
+
+    int vehicleIndex = 0;
+
     for (const Vehicle& vehicle : vehicles) {
         const std::vector<Vec2>& vertices = vehicle.getTransformedVertices();
 
-        if (vertices.size() < 3) {
+        if (vertices.size() < 4) {
             continue;
         }
 
@@ -458,27 +474,173 @@ void Renderer::drawVehicles(
             screenVertices.push_back(ImVec2(screenPoint.x, screenPoint.y));
         }
 
-        if (screenVertices.size() < 3) {
+        if (screenVertices.size() < 4) {
             continue;
         }
 
-        ImU32 vehicleColor = vehicle.getIsStopped()
-            ? IM_COL32(255, 40, 40, 240)
-            : IM_COL32(255, 120, 40, 240);
+        float z = camera.getZoom();
 
+        if (z < 0.35f) {
+            z = 0.35f;
+        }
+
+        ImVec2 p0 = screenVertices[0];
+        ImVec2 p1 = screenVertices[1];
+        ImVec2 p2 = screenVertices[2];
+        ImVec2 p3 = screenVertices[3];
+
+        ImU32 bodyColor;
+
+        if (vehicle.getIsStopped()) {
+            bodyColor = IM_COL32(230, 45, 45, 245);
+        } else {
+            switch (vehicleIndex % 5) {
+                case 0:
+                    bodyColor = IM_COL32(255, 120, 40, 245);   // orange
+                    break;
+                case 1:
+                    bodyColor = IM_COL32(60, 150, 255, 245);   // blue
+                    break;
+                case 2:
+                    bodyColor = IM_COL32(240, 240, 245, 245);  // white
+                    break;
+                case 3:
+                    bodyColor = IM_COL32(255, 210, 50, 245);   // yellow
+                    break;
+                default:
+                    bodyColor = IM_COL32(220, 70, 180, 245);   // pink/purple
+                    break;
+            }
+        }
+
+        // Shadow under vehicle
+        std::vector<ImVec2> shadowVertices;
+        for (const ImVec2& p : screenVertices) {
+            shadowVertices.push_back(ImVec2(
+                p.x + 5.0f * z,
+                p.y + 7.0f * z
+            ));
+        }
+
+        drawList->AddConvexPolyFilled(
+            shadowVertices.data(),
+            static_cast<int>(shadowVertices.size()),
+            IM_COL32(0, 0, 0, 90)
+        );
+
+        // Main car body
         drawList->AddConvexPolyFilled(
             screenVertices.data(),
             static_cast<int>(screenVertices.size()),
-            vehicleColor
+            bodyColor
         );
 
+        // Body outline
         drawList->AddPolyline(
             screenVertices.data(),
             static_cast<int>(screenVertices.size()),
-            IM_COL32(255, 255, 255, 255),
+            IM_COL32(255, 255, 255, 230),
             ImDrawFlags_Closed,
-            2.0f
+            2.0f * z
         );
+
+        // Inner roof/window shape
+        ImVec2 roof0 = lerp(p0, p3, 0.35f);
+        ImVec2 roof1 = lerp(p1, p2, 0.35f);
+        ImVec2 roof2 = lerp(p1, p2, 0.68f);
+        ImVec2 roof3 = lerp(p0, p3, 0.68f);
+
+        ImVec2 roof[4] = {
+            roof0,
+            roof1,
+            roof2,
+            roof3
+        };
+
+        drawList->AddConvexPolyFilled(
+            roof,
+            4,
+            IM_COL32(35, 55, 70, 220)
+        );
+
+        drawList->AddPolyline(
+            roof,
+            4,
+            IM_COL32(180, 230, 255, 220),
+            ImDrawFlags_Closed,
+            1.2f * z
+        );
+
+        // Front windshield highlight
+        ImVec2 wind0 = lerp(p0, p1, 0.25f);
+        ImVec2 wind1 = lerp(p0, p1, 0.75f);
+        ImVec2 wind2 = lerp(roof0, roof1, 0.75f);
+        ImVec2 wind3 = lerp(roof0, roof1, 0.25f);
+
+        ImVec2 windshield[4] = {
+            wind0,
+            wind1,
+            wind2,
+            wind3
+        };
+
+        drawList->AddConvexPolyFilled(
+            windshield,
+            4,
+            IM_COL32(120, 210, 255, 150)
+        );
+
+        // Wheels
+        ImVec2 wheelA = lerp(p0, p3, 0.78f);
+        ImVec2 wheelB = lerp(p1, p2, 0.78f);
+        ImVec2 wheelC = lerp(p0, p3, 0.22f);
+        ImVec2 wheelD = lerp(p1, p2, 0.22f);
+
+        float wheelRadius = 3.8f * z;
+
+        drawList->AddCircleFilled(wheelA, wheelRadius, IM_COL32(10, 10, 10, 255));
+        drawList->AddCircleFilled(wheelB, wheelRadius, IM_COL32(10, 10, 10, 255));
+        drawList->AddCircleFilled(wheelC, wheelRadius, IM_COL32(10, 10, 10, 255));
+        drawList->AddCircleFilled(wheelD, wheelRadius, IM_COL32(10, 10, 10, 255));
+
+        drawList->AddCircleFilled(wheelA, wheelRadius * 0.45f, IM_COL32(160, 160, 160, 255));
+        drawList->AddCircleFilled(wheelB, wheelRadius * 0.45f, IM_COL32(160, 160, 160, 255));
+        drawList->AddCircleFilled(wheelC, wheelRadius * 0.45f, IM_COL32(160, 160, 160, 255));
+        drawList->AddCircleFilled(wheelD, wheelRadius * 0.45f, IM_COL32(160, 160, 160, 255));
+
+        // Headlights on front side
+        ImVec2 headLight1 = lerp(p0, p1, 0.25f);
+        ImVec2 headLight2 = lerp(p0, p1, 0.75f);
+
+        drawList->AddCircleFilled(
+            headLight1,
+            2.8f * z,
+            IM_COL32(255, 245, 150, 255)
+        );
+
+        drawList->AddCircleFilled(
+            headLight2,
+            2.8f * z,
+            IM_COL32(255, 245, 150, 255)
+        );
+
+        // Red rear lights
+        ImVec2 rearLight1 = lerp(p3, p2, 0.25f);
+        ImVec2 rearLight2 = lerp(p3, p2, 0.75f);
+
+        drawList->AddCircleFilled(
+            rearLight1,
+            2.4f * z,
+            IM_COL32(255, 40, 40, 230)
+        );
+
+        drawList->AddCircleFilled(
+            rearLight2,
+            2.4f * z,
+            IM_COL32(255, 40, 40, 230)
+        );
+
+        vehicleIndex++;
     }
 }
 
@@ -965,6 +1127,253 @@ void Renderer::drawRoadLabels(
         if (shownLabels >= maxLabels) {
             break;
         }
+    }
+}
+
+void Renderer::drawEnvironmentDetails(
+    const CityArea& area,
+    bool isometricMode,
+    const Camera2D& camera
+) {
+    ImDrawList* drawList = ImGui::GetBackgroundDrawList();
+
+    // Light sidewalk/road shoulder lines beside each road.
+    for (const Road& road : area.roads) {
+        for (size_t i = 0; i + 1 < road.points.size(); i++) {
+            Vec2 a = transformForView(road.points[i], isometricMode);
+            Vec2 b = transformForView(road.points[i + 1], isometricMode);
+
+            a = applyCamera(a, camera);
+            b = applyCamera(b, camera);
+
+            float dx = b.x - a.x;
+            float dy = b.y - a.y;
+            float length = std::sqrt(dx * dx + dy * dy);
+
+            if (length <= 0.01f) {
+                continue;
+            }
+
+            float nx = -dy / length;
+            float ny = dx / length;
+
+            float offset = 13.0f * camera.getZoom();
+
+            ImVec2 leftA(a.x + nx * offset, a.y + ny * offset);
+            ImVec2 leftB(b.x + nx * offset, b.y + ny * offset);
+
+            ImVec2 rightA(a.x - nx * offset, a.y - ny * offset);
+            ImVec2 rightB(b.x - nx * offset, b.y - ny * offset);
+
+            drawList->AddLine(
+                leftA,
+                leftB,
+                IM_COL32(130, 130, 135, 120),
+                2.0f * camera.getZoom()
+            );
+
+            drawList->AddLine(
+                rightA,
+                rightB,
+                IM_COL32(130, 130, 135, 120),
+                2.0f * camera.getZoom()
+            );
+        }
+    }
+
+    // Small junction circles to make intersections clearer.
+    for (const TrafficLight& light : area.trafficLights) {
+        Vec2 p = transformForView(light.position, isometricMode);
+        p = applyCamera(p, camera);
+
+        drawList->AddCircleFilled(
+            ImVec2(p.x, p.y),
+            22.0f * camera.getZoom(),
+            IM_COL32(60, 60, 65, 130)
+        );
+
+        drawList->AddCircle(
+            ImVec2(p.x, p.y),
+            22.0f * camera.getZoom(),
+            IM_COL32(210, 210, 210, 130),
+            24,
+            1.5f * camera.getZoom()
+        );
+    }
+}
+
+void Renderer::drawTrees(
+    const CityArea& area,
+    bool isometricMode,
+    const Camera2D& camera
+) {
+    ImDrawList* drawList = ImGui::GetBackgroundDrawList();
+
+    int treeCount = 0;
+    const int maxTrees = 90;
+
+    for (const Road& road : area.roads) {
+        for (size_t i = 0; i + 1 < road.points.size(); i++) {
+            Vec2 p1 = road.points[i];
+            Vec2 p2 = road.points[i + 1];
+
+            float dx = p2.x - p1.x;
+            float dy = p2.y - p1.y;
+            float length = std::sqrt(dx * dx + dy * dy);
+
+            if (length < 80.0f) {
+                continue;
+            }
+
+            float nx = -dy / length;
+            float ny = dx / length;
+
+            int samples = static_cast<int>(length / 130.0f);
+
+            for (int s = 1; s <= samples; s++) {
+                float t = static_cast<float>(s) / static_cast<float>(samples + 1);
+
+                Vec2 basePoint(
+                    p1.x + dx * t,
+                    p1.y + dy * t
+                );
+
+                // Alternate sides of the road.
+                float side = (s % 2 == 0) ? 1.0f : -1.0f;
+
+                Vec2 treeWorld(
+                    basePoint.x + nx * side * 36.0f,
+                    basePoint.y + ny * side * 36.0f
+                );
+
+                Vec2 screen = transformForView(treeWorld, isometricMode);
+                screen = applyCamera(screen, camera);
+
+                float z = camera.getZoom();
+
+                // Tree shadow
+                drawList->AddCircleFilled(
+                    ImVec2(screen.x + 4.0f * z, screen.y + 6.0f * z),
+                    8.0f * z,
+                    IM_COL32(0, 0, 0, 70)
+                );
+
+                // Trunk
+                drawList->AddRectFilled(
+                    ImVec2(screen.x - 2.0f * z, screen.y + 4.0f * z),
+                    ImVec2(screen.x + 2.0f * z, screen.y + 13.0f * z),
+                    IM_COL32(100, 65, 30, 220)
+                );
+
+                // Leaves
+                drawList->AddCircleFilled(
+                    ImVec2(screen.x, screen.y),
+                    9.0f * z,
+                    IM_COL32(35, 150, 75, 230)
+                );
+
+                drawList->AddCircleFilled(
+                    ImVec2(screen.x - 6.0f * z, screen.y + 3.0f * z),
+                    7.0f * z,
+                    IM_COL32(25, 120, 60, 220)
+                );
+
+                drawList->AddCircleFilled(
+                    ImVec2(screen.x + 6.0f * z, screen.y + 3.0f * z),
+                    7.0f * z,
+                    IM_COL32(45, 170, 85, 220)
+                );
+
+                treeCount++;
+
+                if (treeCount >= maxTrees) {
+                    return;
+                }
+            }
+        }
+    }
+}
+
+void Renderer::drawBuildingWindows(
+    const CityArea& area,
+    bool isometricMode,
+    const Camera2D& camera
+) {
+    ImDrawList* drawList = ImGui::GetBackgroundDrawList();
+
+    int buildingIndex = 0;
+
+    for (const Building& building : area.buildings) {
+        if (building.base.empty()) {
+            continue;
+        }
+
+        buildingIndex++;
+
+        Vec2 center = getPolygonCenter(
+            building.base,
+            isometricMode,
+            camera
+        );
+
+        float z = camera.getZoom();
+
+        // Skip if zoomed too far out.
+        if (z < 0.45f) {
+            continue;
+        }
+
+        int rows = 2 + (buildingIndex % 3);
+        int cols = 3 + (buildingIndex % 4);
+
+        float startX = center.x - cols * 5.0f * z;
+        float startY = center.y - rows * 6.0f * z;
+
+        for (int r = 0; r < rows; r++) {
+            for (int c = 0; c < cols; c++) {
+                if ((r + c + buildingIndex) % 3 == 0) {
+                    continue;
+                }
+
+                float x = startX + c * 10.0f * z;
+                float y = startY + r * 9.0f * z;
+
+                drawList->AddRectFilled(
+                    ImVec2(x, y),
+                    ImVec2(x + 4.0f * z, y + 5.0f * z),
+                    IM_COL32(220, 245, 255, 150)
+                );
+            }
+        }
+    }
+}
+
+void Renderer::drawStopLines(
+    const std::vector<RuntimeTrafficLight>& trafficLights,
+    bool isometricMode,
+    const Camera2D& camera
+) {
+    ImDrawList* drawList = ImGui::GetBackgroundDrawList();
+
+    for (const RuntimeTrafficLight& light : trafficLights) {
+        Vec2 pos = transformForView(light.baseLight.position, isometricMode);
+        pos = applyCamera(pos, camera);
+
+        float z = camera.getZoom();
+
+        drawList->AddLine(
+            ImVec2(pos.x - 28.0f * z, pos.y + 18.0f * z),
+            ImVec2(pos.x + 28.0f * z, pos.y - 10.0f * z),
+            IM_COL32(255, 255, 255, 230),
+            4.0f * z
+        );
+
+        drawList->AddLine(
+            ImVec2(pos.x - 30.0f * z, pos.y + 22.0f * z),
+            ImVec2(pos.x + 30.0f * z, pos.y - 6.0f * z),
+            IM_COL32(30, 30, 30, 130),
+            1.0f * z
+        );
     }
 }
 
