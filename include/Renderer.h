@@ -1,11 +1,14 @@
 #pragma once
 
 #include <vector>
+#include <string>
 
 #include "PixelBuffer.h"
 #include "CityArea.h"
 #include "Vehicle.h"
 #include "SignalController.h"
+#include "Camera2D.h"
+#include "LiveContextEngine.h"
 
 class Renderer {
 public:
@@ -18,9 +21,11 @@ public:
         const CityArea& area,
         const std::vector<Vehicle>& vehicles,
         const std::vector<RuntimeTrafficLight>& trafficLights,
+        const LiveContextEngine& liveContextEngine,
         bool xrayMode,
         int selectedLineAlgorithm,
-        bool isometricMode
+        bool isometricMode,
+        const Camera2D& camera
     );
 
 private:
@@ -32,20 +37,74 @@ private:
         const CityArea& area,
         int selectedLineAlgorithm,
         bool xrayMode,
-        bool isometricMode
+        bool isometricMode,
+        const Camera2D& camera
     );
 
     Vec2 transformForView(const Vec2& point, bool isometricMode);
-    void drawBuildingFills2_5D(const CityArea& area);
-    void drawTopDownBuildingFills(const CityArea& area);
-    void drawTopDownRoadFills(const CityArea& area);
-    void drawPixelBuffer(bool xrayMode);
+    Vec2 applyCamera(const Vec2& point, const Camera2D& camera);
 
-    void drawVehicles(const std::vector<Vehicle>& vehicles, bool isometricMode);
+    void drawBuildingFills2_5D(const CityArea& area, const Camera2D& camera);
+    void drawTopDownBuildingFills(const CityArea& area, const Camera2D& camera);
+    void drawTopDownRoadFills(const CityArea& area, const Camera2D& camera);
+    void drawIsometricRoadFills(const CityArea& area, const Camera2D& camera);
 
     void drawRuntimeTrafficLights(
         const std::vector<RuntimeTrafficLight>& trafficLights,
-        bool isometricMode
+        bool isometricMode,
+        const Camera2D& camera
     );
 
+    void drawVehicles(
+        const std::vector<Vehicle>& vehicles,
+        bool isometricMode,
+        const Camera2D& camera
+    );
+
+    void drawMiniMap(
+        const CityArea& area,
+        const std::vector<Vehicle>& vehicles,
+        const Camera2D& camera
+    );
+
+    void drawPixelBuffer(bool xrayMode);
+
+    void drawLiveContextOverlay(const LiveContextEngine& liveContext);
+    void drawRainEffect();
+    void drawNightEffect(const CityArea& area, bool isometricMode, const Camera2D& camera);
+    void drawIncidentMarker(bool isometricMode, const Camera2D& camera);
+    void drawXRayDashboard(
+        const CityArea& area,
+        const std::vector<Vehicle>& vehicles,
+        const std::vector<RuntimeTrafficLight>& trafficLights,
+        int selectedLineAlgorithm,
+        bool isometricMode,
+        const Camera2D& camera
+    );
+
+    void drawBuildingLabels(
+        const CityArea& area,
+        bool isometricMode,
+        const Camera2D& camera
+    );
+
+    void drawRoadLabels(
+        const CityArea& area,
+        bool isometricMode,
+        const Camera2D& camera
+    );
+
+    bool shouldShowLabel(const std::string& name);
+
+    Vec2 getPolygonCenter(
+        const std::vector<Vec2>& points,
+        bool isometricMode,
+        const Camera2D& camera
+    );
+
+    Vec2 getRoadLabelPoint(
+        const Road& road,
+        bool isometricMode,
+        const Camera2D& camera
+    );
 };

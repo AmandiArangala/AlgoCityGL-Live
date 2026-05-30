@@ -48,13 +48,19 @@ void ImGuiPanels::render() {
 
     ImGui::Separator();
 
-    ImGui::Text("Day 7 Status:");
-    ImGui::BulletText("Scan-line polygon filling added");
-    ImGui::BulletText("Odd-even rule used for polygon fill");
-    ImGui::BulletText("Horizontal edge handling added");
-    ImGui::BulletText("Top-down buildings filled");
-    ImGui::BulletText("Road thickness improved");
-    ImGui::BulletText("Stopped vehicle color indicator added");
+    ImGui::Text("Day 9 Status:");
+    ImGui::BulletText("Live context modes added");
+    ImGui::BulletText("Rain mode visual effect added");
+    ImGui::BulletText("Night mode visual effect added");
+    ImGui::BulletText("Heavy traffic mode added");
+    ImGui::BulletText("Incident mode added");
+    ImGui::BulletText("X-Ray theory dashboard added");
+
+    ImGui::Separator();
+    ImGui::Text("Camera Controls:");
+    ImGui::BulletText("W/A/S/D: Pan");
+    ImGui::BulletText("Q/E: Zoom");
+    ImGui::BulletText("C: Reset Camera");
 
     ImGui::End();
 }
@@ -95,4 +101,8 @@ bool ImGuiPanels::consumeResetRequest() {
     }
 
     return false;
+}
+
+int ImGuiPanels::getSelectedWeatherMode() const {
+    return selectedWeather;
 }
