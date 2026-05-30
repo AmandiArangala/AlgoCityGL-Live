@@ -48,12 +48,13 @@ void ImGuiPanels::render() {
 
     ImGui::Separator();
 
-    ImGui::Text("Day 6 Status:");
-    ImGui::BulletText("SignalController added");
-    ImGui::BulletText("Traffic lights change Red/Green/Yellow");
-    ImGui::BulletText("Vehicles stop near red lights");
-    ImGui::BulletText("Vehicles continue when signal changes");
-    ImGui::BulletText("Traffic lights rendered dynamically");
+    ImGui::Text("Day 7 Status:");
+    ImGui::BulletText("Scan-line polygon filling added");
+    ImGui::BulletText("Odd-even rule used for polygon fill");
+    ImGui::BulletText("Horizontal edge handling added");
+    ImGui::BulletText("Top-down buildings filled");
+    ImGui::BulletText("Road thickness improved");
+    ImGui::BulletText("Stopped vehicle color indicator added");
 
     ImGui::End();
 }

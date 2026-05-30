@@ -37,6 +37,8 @@ private:
 
     Vec2 transformForView(const Vec2& point, bool isometricMode);
     void drawBuildingFills2_5D(const CityArea& area);
+    void drawTopDownBuildingFills(const CityArea& area);
+    void drawTopDownRoadFills(const CityArea& area);
     void drawPixelBuffer(bool xrayMode);
 
     void drawVehicles(const std::vector<Vehicle>& vehicles, bool isometricMode);
@@ -45,4 +47,5 @@ private:
         const std::vector<RuntimeTrafficLight>& trafficLights,
         bool isometricMode
     );
+
 };

@@ -21,6 +21,7 @@ add_executable(AlgoCityGL_Live
     graphics/CircleAlgorithms.cpp
     graphics/Projection2_5D.cpp
     graphics/Matrix3x3.cpp
+    graphics/FillAlgorithms.cpp
 
     city/AreaManager.cpp
     city/Vehicle.cpp
