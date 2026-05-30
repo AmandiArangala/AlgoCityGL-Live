@@ -4,6 +4,7 @@
 #include "LineAlgorithms.h"
 #include "CircleAlgorithms.h"
 #include "Projection2_5D.h"
+#include "FillAlgorithms.h"
 
 #include "imgui.h"
 
@@ -30,6 +31,9 @@ void Renderer::renderCityArea(
 ) {
     if (isometricMode) {
         drawBuildingFills2_5D(area);
+    } else {
+        drawTopDownRoadFills(area);
+        drawTopDownBuildingFills(area);
     }
 
     buildCityPixelScene(area, selectedLineAlgorithm, xrayMode, isometricMode);
@@ -102,6 +106,57 @@ void Renderer::drawBuildingFills2_5D(const CityArea& area) {
             static_cast<int>(top.size()),
             IM_COL32(80, 200, 240, 220)
         );
+    }
+}
+
+void Renderer::drawTopDownBuildingFills(const CityArea& area) {
+    PixelBuffer fillBuffer;
+
+    Color fillColor(0.05f, 0.45f, 0.60f, 0.45f);
+
+    for (const Building& building : area.buildings) {
+        if (building.base.size() >= 3) {
+            FillAlgorithms::scanLineFillPolygon(
+                fillBuffer,
+                building.base,
+                fillColor
+            );
+        }
+    }
+
+    ImDrawList* drawList = ImGui::GetBackgroundDrawList();
+
+    for (const Pixel& pixel : fillBuffer.getPixels()) {
+        ImU32 color = IM_COL32(
+            static_cast<int>(pixel.color.r * 255.0f),
+            static_cast<int>(pixel.color.g * 255.0f),
+            static_cast<int>(pixel.color.b * 255.0f),
+            130
+        );
+
+        drawList->AddRectFilled(
+            ImVec2(static_cast<float>(pixel.x), static_cast<float>(pixel.y)),
+            ImVec2(static_cast<float>(pixel.x + 2), static_cast<float>(pixel.y + 2)),
+            color
+        );
+    }
+}
+
+void Renderer::drawTopDownRoadFills(const CityArea& area) {
+    ImDrawList* drawList = ImGui::GetBackgroundDrawList();
+
+    for (const Road& road : area.roads) {
+        for (size_t i = 0; i + 1 < road.points.size(); i++) {
+            Vec2 a = road.points[i];
+            Vec2 b = road.points[i + 1];
+
+            drawList->AddLine(
+                ImVec2(a.x, a.y),
+                ImVec2(b.x, b.y),
+                IM_COL32(60, 60, 65, 220),
+                18.0f
+            );
+        }
     }
 }
 
@@ -370,10 +425,14 @@ void Renderer::drawVehicles(const std::vector<Vehicle>& vehicles, bool isometric
             screenVertices.push_back(ImVec2(screenPoint.x, screenPoint.y));
         }
 
+        ImU32 vehicleColor = vehicle.getIsStopped()
+            ? IM_COL32(255, 40, 40, 240)
+            : IM_COL32(255, 120, 40, 240);
+
         drawList->AddConvexPolyFilled(
             screenVertices.data(),
             static_cast<int>(screenVertices.size()),
-            IM_COL32(255, 80, 40, 230)
+            vehicleColor
         );
 
         drawList->AddPolyline(
