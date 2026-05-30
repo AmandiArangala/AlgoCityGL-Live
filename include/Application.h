@@ -7,6 +7,7 @@
 #include "AreaManager.h"
 #include "VehicleController.h"
 #include "SignalController.h"
+#include "Camera2D.h"
 
 struct GLFWwindow;
 
@@ -29,6 +30,7 @@ private:
     AreaManager areaManager;
     VehicleController vehicleController;
     SignalController signalController;
+    Camera2D camera;
 
     bool initialize();
     void shutdown();

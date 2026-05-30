@@ -118,7 +118,8 @@ void Application::run() {
                 signalController.getTrafficLights(),
                 imguiPanels.getXRayMode(),
                 imguiPanels.getSelectedLineAlgorithm(),
-                imguiPanels.getIsometricMode()
+                imguiPanels.getIsometricMode(),
+                camera
             );
         } else {
             renderer.renderDay2TestScene(
@@ -137,6 +138,36 @@ void Application::run() {
 void Application::processInput() {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, true);
+    }
+
+    float panSpeed = 6.0f;
+
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+        camera.pan(0.0f, panSpeed);
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+        camera.pan(0.0f, -panSpeed);
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+        camera.pan(panSpeed, 0.0f);
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+        camera.pan(-panSpeed, 0.0f);
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
+        camera.zoomIn();
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
+        camera.zoomOut();
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS) {
+        camera.reset();
     }
 }
 

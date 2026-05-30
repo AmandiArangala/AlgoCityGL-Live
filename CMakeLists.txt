@@ -15,6 +15,7 @@ add_executable(AlgoCityGL_Live
     src/Application.cpp
     src/Renderer.cpp
     src/ImGuiPanels.cpp
+    src/Camera2D.cpp
 
     graphics/PixelBuffer.cpp
     graphics/LineAlgorithms.cpp

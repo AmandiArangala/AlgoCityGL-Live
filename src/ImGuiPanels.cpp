@@ -48,13 +48,18 @@ void ImGuiPanels::render() {
 
     ImGui::Separator();
 
-    ImGui::Text("Day 7 Status:");
-    ImGui::BulletText("Scan-line polygon filling added");
-    ImGui::BulletText("Odd-even rule used for polygon fill");
-    ImGui::BulletText("Horizontal edge handling added");
-    ImGui::BulletText("Top-down buildings filled");
-    ImGui::BulletText("Road thickness improved");
-    ImGui::BulletText("Stopped vehicle color indicator added");
+    ImGui::Text("Day 8 Status:");
+    ImGui::BulletText("Camera pan added: W/A/S/D");
+    ImGui::BulletText("Zoom added: Q/E");
+    ImGui::BulletText("Camera reset added: C");
+    ImGui::BulletText("Mini-map added");
+    ImGui::BulletText("World-to-screen mapping introduced");
+
+    ImGui::Separator();
+    ImGui::Text("Camera Controls:");
+    ImGui::BulletText("W/A/S/D: Pan");
+    ImGui::BulletText("Q/E: Zoom");
+    ImGui::BulletText("C: Reset Camera");
 
     ImGui::End();
 }
