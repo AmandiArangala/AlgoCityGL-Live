@@ -23,6 +23,7 @@ add_executable(AlgoCityGL_Live
     graphics/Projection2_5D.cpp
     graphics/Matrix3x3.cpp
     graphics/FillAlgorithms.cpp
+    graphics/ClippingAlgorithms.cpp
 
     city/AreaManager.cpp
     city/Vehicle.cpp
@@ -42,6 +43,8 @@ add_executable(AlgoCityGL_Live
     ${IMGUI_DIR}/backends/imgui_impl_opengl3.cpp
 )
 
+find_package(glfw3 REQUIRED)
+
 target_include_directories(AlgoCityGL_Live PRIVATE
     include
     graphics
@@ -55,10 +58,27 @@ target_include_directories(AlgoCityGL_Live PRIVATE
     ${IMGUI_DIR}/backends
 )
 
-target_link_libraries(AlgoCityGL_Live PRIVATE
-    ${GLFW_DIR}/lib/libglfw3.a
-    opengl32
-    gdi32
-    user32
-    shell32
-)
+if(APPLE)
+    target_link_libraries(AlgoCityGL_Live PRIVATE
+        glfw
+        "-framework OpenGL"
+        "-framework Cocoa"
+        "-framework IOKit"
+        "-framework CoreVideo"
+    )
+elseif(WIN32)
+    target_link_libraries(AlgoCityGL_Live PRIVATE
+        ${GLFW_DIR}/lib/libglfw3.a
+        opengl32
+        gdi32
+        user32
+        shell32
+    )
+else()
+    target_link_libraries(AlgoCityGL_Live PRIVATE
+        glfw
+        GL
+        dl
+        pthread
+    )
+endif()

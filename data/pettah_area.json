@@ -1,0 +1,313 @@
+{
+  "name": "Pettah / Colombo Fort",
+  "latitude": 6.9365,
+  "longitude": 79.8529,
+  "defaultTrafficLevel": "HIGH",
+  "roads": [
+    {
+      "id": "road_main_st",
+      "name": "Main Street",
+      "lanes": 2,
+      "points": [
+        [100, 350], [300, 350], [500, 350], [700, 350], [900, 350], [1100, 350]
+      ]
+    },
+    {
+      "id": "road_front_st",
+      "name": "Front Street",
+      "lanes": 2,
+      "points": [
+        [100, 500], [300, 500], [500, 500], [700, 500], [900, 500], [1100, 500]
+      ]
+    },
+    {
+      "id": "road_bankshall",
+      "name": "Bankshall Street",
+      "lanes": 1,
+      "points": [
+        [300, 220], [500, 220], [700, 220], [900, 220]
+      ]
+    },
+    {
+      "id": "road_1st_cross",
+      "name": "1st Cross Street",
+      "lanes": 1,
+      "points": [
+        [300, 150], [300, 220], [300, 350], [300, 500], [300, 680]
+      ]
+    },
+    {
+      "id": "road_2nd_cross",
+      "name": "2nd Cross Street",
+      "lanes": 1,
+      "points": [
+        [500, 150], [500, 220], [500, 350], [500, 500], [500, 680]
+      ]
+    },
+    {
+      "id": "road_3rd_cross",
+      "name": "3rd Cross Street",
+      "lanes": 1,
+      "points": [
+        [700, 150], [700, 220], [700, 350], [700, 500], [700, 680]
+      ]
+    },
+    {
+      "id": "road_sea_st",
+      "name": "Sea Street",
+      "lanes": 2,
+      "points": [
+        [900, 150], [900, 220], [900, 350], [900, 500], [900, 680]
+      ]
+    },
+    {
+      "id": "road_olcott",
+      "name": "Sir Chittampalam A Gardiner Mawatha",
+      "lanes": 3,
+      "points": [
+        [100, 680], [300, 580], [500, 480], [700, 380], [900, 270], [1100, 150]
+      ]
+    },
+    {
+      "id": "road_prince",
+      "name": "Prince Street",
+      "lanes": 1,
+      "points": [
+        [100, 150], [300, 150], [500, 150], [700, 150], [900, 150], [1100, 150]
+      ]
+    },
+    {
+      "id": "road_keyzer",
+      "name": "Keyzer Street",
+      "lanes": 1,
+      "points": [
+        [100, 150], [100, 220], [100, 350], [100, 500], [100, 680]
+      ]
+    }
+  ],
+  "buildings": [
+    {
+      "id": "b_manor_arcade",
+      "name": "Manor Arcade",
+      "height": 55,
+      "base": [[120, 240], [270, 240], [270, 330], [120, 330]]
+    },
+    {
+      "id": "b_pettah_post",
+      "name": "Pettah Post Office",
+      "height": 65,
+      "base": [[320, 240], [470, 240], [470, 330], [320, 330]]
+    },
+    {
+      "id": "b_boc_tower",
+      "name": "Bank of Ceylon Tower",
+      "height": 100,
+      "base": [[520, 240], [670, 240], [670, 330], [520, 330]]
+    },
+    {
+      "id": "b_pettah_mosque",
+      "name": "Pettah Grand Mosque",
+      "height": 75,
+      "base": [[720, 240], [870, 240], [870, 330], [720, 330]]
+    },
+    {
+      "id": "b_fort_station",
+      "name": "Fort Railway Station",
+      "height": 90,
+      "base": [[920, 240], [1070, 240], [1070, 330], [920, 330]]
+    },
+    {
+      "id": "b_manning_market",
+      "name": "Manning Market",
+      "height": 40,
+      "base": [[120, 370], [270, 370], [270, 480], [120, 480]]
+    },
+    {
+      "id": "b_olcott_building",
+      "name": "Olcott Building",
+      "height": 60,
+      "base": [[320, 370], [470, 370], [470, 480], [320, 480]]
+    },
+    {
+      "id": "b_cloth_hall",
+      "name": "Pettah Cloth Hall",
+      "height": 50,
+      "base": [[520, 370], [670, 370], [670, 480], [520, 480]]
+    },
+    {
+      "id": "b_grand_oriental",
+      "name": "Grand Oriental Hotel",
+      "height": 95,
+      "base": [[720, 370], [870, 370], [870, 480], [720, 480]]
+    },
+    {
+      "id": "b_wtc",
+      "name": "World Trade Centre",
+      "height": 130,
+      "base": [[920, 370], [1070, 370], [1070, 480], [920, 480]]
+    },
+    {
+      "id": "b_wholesale_market",
+      "name": "Pettah Wholesale Market",
+      "height": 35,
+      "base": [[120, 520], [270, 520], [270, 650], [120, 650]]
+    },
+    {
+      "id": "b_bus_depot",
+      "name": "Central Bus Depot",
+      "height": 30,
+      "base": [[320, 520], [670, 520], [670, 650], [320, 650]]
+    },
+    {
+      "id": "b_bodhiraja",
+      "name": "Bodhiraja Road Complex",
+      "height": 55,
+      "base": [[720, 520], [870, 520], [870, 650], [720, 650]]
+    },
+    {
+      "id": "b_lotus_road",
+      "name": "Lotus Road Complex",
+      "height": 65,
+      "base": [[920, 520], [1070, 520], [1070, 650], [920, 650]]
+    },
+    {
+      "id": "b_fort_chambers",
+      "name": "Fort Chambers",
+      "height": 70,
+      "base": [[320, 160], [870, 160], [870, 210], [320, 210]]
+    }
+  ],
+  "trafficLights": [
+    {
+      "id": "signal_main_1st",
+      "position": [300, 350],
+      "cycle": [8, 2, 8]
+    },
+    {
+      "id": "signal_main_3rd",
+      "position": [700, 350],
+      "cycle": [10, 2, 10]
+    },
+    {
+      "id": "signal_front_sea",
+      "position": [900, 500],
+      "cycle": [7, 2, 7]
+    },
+    {
+      "id": "signal_main_sea",
+      "position": [900, 350],
+      "cycle": [8, 3, 8]
+    },
+    {
+      "id": "signal_front_2nd",
+      "position": [500, 500],
+      "cycle": [6, 2, 6]
+    }
+  ],
+  "crossings": [
+    {
+      "id": "crossing_main_1st",
+      "points": [[285, 350], [315, 350]]
+    },
+    {
+      "id": "crossing_front_3rd",
+      "points": [[700, 485], [700, 515]]
+    },
+    {
+      "id": "crossing_sea_main",
+      "points": [[900, 335], [900, 365]]
+    }
+  ],
+  "routes": [
+    {
+      "id": "route_main_east",
+      "points": [
+        [100, 340], [300, 340], [500, 340], [700, 340], [900, 340], [1100, 340]
+      ]
+    },
+    {
+      "id": "route_main_west",
+      "points": [
+        [1100, 360], [900, 360], [700, 360], [500, 360], [300, 360], [100, 360]
+      ]
+    },
+    {
+      "id": "route_front_east",
+      "points": [
+        [100, 490], [300, 490], [500, 490], [700, 490], [900, 490], [1100, 490]
+      ]
+    },
+    {
+      "id": "route_front_west",
+      "points": [
+        [1100, 510], [900, 510], [700, 510], [500, 510], [300, 510], [100, 510]
+      ]
+    },
+    {
+      "id": "route_bankshall_east",
+      "points": [
+        [300, 220], [500, 220], [700, 220], [900, 220]
+      ]
+    },
+    {
+      "id": "route_bankshall_west",
+      "points": [
+        [900, 220], [700, 220], [500, 220], [300, 220]
+      ]
+    },
+    {
+      "id": "route_1st_cross_south",
+      "points": [
+        [300, 150], [300, 220], [300, 350], [300, 500], [300, 680]
+      ]
+    },
+    {
+      "id": "route_2nd_cross_south",
+      "points": [
+        [500, 150], [500, 220], [500, 350], [500, 500], [500, 680]
+      ]
+    },
+    {
+      "id": "route_3rd_cross_south",
+      "points": [
+        [700, 150], [700, 220], [700, 350], [700, 500], [700, 680]
+      ]
+    },
+    {
+      "id": "route_sea_st_south",
+      "points": [
+        [900, 150], [900, 220], [900, 350], [900, 500], [900, 680]
+      ]
+    },
+    {
+      "id": "route_sea_st_north",
+      "points": [
+        [900, 680], [900, 500], [900, 350], [900, 220], [900, 150]
+      ]
+    },
+    {
+      "id": "route_olcott_ne",
+      "points": [
+        [100, 680], [300, 580], [500, 480], [700, 380], [900, 270], [1100, 150]
+      ]
+    },
+    {
+      "id": "route_olcott_sw",
+      "points": [
+        [1100, 150], [900, 270], [700, 380], [500, 480], [300, 580], [100, 680]
+      ]
+    },
+    {
+      "id": "route_1st_cross_north",
+      "points": [
+        [300, 680], [300, 500], [300, 350], [300, 220], [300, 150]
+      ]
+    },
+    {
+      "id": "route_prince_east",
+      "points": [
+        [100, 150], [300, 150], [500, 150], [700, 150], [900, 150], [1100, 150]
+      ]
+    }
+  ]
+}

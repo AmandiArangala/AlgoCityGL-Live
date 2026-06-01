@@ -5,6 +5,7 @@
 #include "CircleAlgorithms.h"
 #include "Projection2_5D.h"
 #include "FillAlgorithms.h"
+#include "ClippingAlgorithms.h"
 
 #include "imgui.h"
 
@@ -259,10 +260,36 @@ void Renderer::buildCityPixelScene(
 ) {
     pixelBuffer.clear();
 
+    ImVec2 displaySize = ImGui::GetIO().DisplaySize;
+
+    // In X-Ray mode use an inset clip window so clipping is visually obvious.
+    int clipMargin = xrayMode ? 80 : 0;
+    int clipX1 = clipMargin;
+    int clipY1 = clipMargin;
+    int clipX2 = static_cast<int>(displaySize.x) - clipMargin;
+    int clipY2 = static_cast<int>(displaySize.y) - clipMargin;
+
+    auto drawLineClipped = [&](Vec2 a, Vec2 b, Color color, bool useDDA) {
+        int ax = static_cast<int>(a.x), ay = static_cast<int>(a.y);
+        int bx = static_cast<int>(b.x), by = static_cast<int>(b.y);
+        int cx1, cy1, cx2, cy2;
+
+        if (!ClippingAlgorithms::cohenSutherland(ax, ay, bx, by, clipX1, clipY1, clipX2, clipY2, cx1, cy1, cx2, cy2)) {
+            return;
+        }
+
+        if (useDDA) {
+            LineAlgorithms::drawLineDDA(pixelBuffer, cx1, cy1, cx2, cy2, color);
+        } else {
+            LineAlgorithms::drawLineBresenham(pixelBuffer, cx1, cy1, cx2, cy2, color);
+        }
+    };
+
     Color roadColor(0.75f, 0.75f, 0.75f, 1.0f);
     Color buildingColor(0.2f, 0.8f, 1.0f, 1.0f);
     Color routeColor(1.0f, 0.9f, 0.1f, 1.0f);
     Color crossingColor(1.0f, 1.0f, 1.0f, 1.0f);
+    bool useDDA = (selectedLineAlgorithm == 0);
 
     for (const Road& road : area.roads) {
         for (size_t i = 0; i + 1 < road.points.size(); i++) {
@@ -272,21 +299,7 @@ void Renderer::buildCityPixelScene(
             a = applyCamera(a, camera);
             b = applyCamera(b, camera);
 
-            if (selectedLineAlgorithm == 0) {
-                LineAlgorithms::drawLineDDA(
-                    pixelBuffer,
-                    static_cast<int>(a.x), static_cast<int>(a.y),
-                    static_cast<int>(b.x), static_cast<int>(b.y),
-                    roadColor
-                );
-            } else {
-                LineAlgorithms::drawLineBresenham(
-                    pixelBuffer,
-                    static_cast<int>(a.x), static_cast<int>(a.y),
-                    static_cast<int>(b.x), static_cast<int>(b.y),
-                    roadColor
-                );
-            }
+            drawLineClipped(a, b, roadColor, useDDA);
         }
     }
 
@@ -299,12 +312,7 @@ void Renderer::buildCityPixelScene(
                 a = applyCamera(a, camera);
                 b = applyCamera(b, camera);
 
-                LineAlgorithms::drawLineDDA(
-                    pixelBuffer,
-                    static_cast<int>(a.x), static_cast<int>(a.y),
-                    static_cast<int>(b.x), static_cast<int>(b.y),
-                    routeColor
-                );
+                drawLineClipped(a, b, routeColor, true);
             }
         }
     }
@@ -319,12 +327,7 @@ void Renderer::buildCityPixelScene(
                 Vec2 a = applyCamera(building.base[i], camera);
                 Vec2 b = applyCamera(building.base[(i + 1) % building.base.size()], camera);
 
-                LineAlgorithms::drawLineBresenham(
-                    pixelBuffer,
-                    static_cast<int>(a.x), static_cast<int>(a.y),
-                    static_cast<int>(b.x), static_cast<int>(b.y),
-                    buildingColor
-                );
+                drawLineClipped(a, b, buildingColor, false);
             }
         } else {
             std::vector<Vec2> base;
@@ -344,26 +347,9 @@ void Renderer::buildCityPixelScene(
             for (size_t i = 0; i < base.size(); i++) {
                 size_t next = (i + 1) % base.size();
 
-                LineAlgorithms::drawLineBresenham(
-                    pixelBuffer,
-                    static_cast<int>(base[i].x), static_cast<int>(base[i].y),
-                    static_cast<int>(base[next].x), static_cast<int>(base[next].y),
-                    buildingColor
-                );
-
-                LineAlgorithms::drawLineBresenham(
-                    pixelBuffer,
-                    static_cast<int>(top[i].x), static_cast<int>(top[i].y),
-                    static_cast<int>(top[next].x), static_cast<int>(top[next].y),
-                    buildingColor
-                );
-
-                LineAlgorithms::drawLineBresenham(
-                    pixelBuffer,
-                    static_cast<int>(base[i].x), static_cast<int>(base[i].y),
-                    static_cast<int>(top[i].x), static_cast<int>(top[i].y),
-                    buildingColor
-                );
+                drawLineClipped(base[i], base[next], buildingColor, false);
+                drawLineClipped(top[i], top[next], buildingColor, false);
+                drawLineClipped(base[i], top[i], buildingColor, false);
             }
         }
     }
@@ -376,12 +362,7 @@ void Renderer::buildCityPixelScene(
             a = applyCamera(a, camera);
             b = applyCamera(b, camera);
 
-            LineAlgorithms::drawLineBresenham(
-                pixelBuffer,
-                static_cast<int>(a.x), static_cast<int>(a.y),
-                static_cast<int>(b.x), static_cast<int>(b.y),
-                crossingColor
-            );
+            drawLineClipped(a, b, crossingColor, false);
         }
     }
 
@@ -900,7 +881,7 @@ void Renderer::drawXRayDashboard(
     ImDrawList* drawList = ImGui::GetBackgroundDrawList();
 
     ImVec2 panelPos(20.0f, 80.0f);
-    ImVec2 panelSize(360.0f, 210.0f);
+    ImVec2 panelSize(380.0f, 235.0f);
 
     drawList->AddRectFilled(
         panelPos,
@@ -925,20 +906,36 @@ void Renderer::drawXRayDashboard(
 
     drawList->AddText(ImVec2(panelPos.x + 12, panelPos.y + 42), IM_COL32(230, 230, 230, 255), lineAlgorithm);
     drawList->AddText(ImVec2(panelPos.x + 12, panelPos.y + 62), IM_COL32(230, 230, 230, 255), "Circle: Midpoint Circle Algorithm");
-    drawList->AddText(ImVec2(panelPos.x + 12, panelPos.y + 82), IM_COL32(230, 230, 230, 255), "Fill: Scan-line Polygon Fill");
-    drawList->AddText(ImVec2(panelPos.x + 12, panelPos.y + 102), IM_COL32(230, 230, 230, 255), viewMode);
-    drawList->AddText(ImVec2(panelPos.x + 12, panelPos.y + 122), IM_COL32(230, 230, 230, 255), "Transform: Translation x Rotation x Scaling");
+    drawList->AddText(ImVec2(panelPos.x + 12, panelPos.y + 82), IM_COL32(230, 230, 230, 255), "Fill: Scan-line Polygon Fill (Odd-Even Rule)");
+    drawList->AddText(ImVec2(panelPos.x + 12, panelPos.y + 102), IM_COL32(230, 230, 230, 255), "Clip: Cohen-Sutherland Line Clipping");
+    drawList->AddText(ImVec2(panelPos.x + 12, panelPos.y + 122), IM_COL32(230, 230, 230, 255), viewMode);
+    drawList->AddText(ImVec2(panelPos.x + 12, panelPos.y + 142), IM_COL32(230, 230, 230, 255), "Transform: Translation x Rotation x Scaling");
 
     char buffer[128];
 
     std::snprintf(buffer, sizeof(buffer), "Roads: %d  Buildings: %d", static_cast<int>(area.roads.size()), static_cast<int>(area.buildings.size()));
-    drawList->AddText(ImVec2(panelPos.x + 12, panelPos.y + 152), IM_COL32(180, 220, 255, 255), buffer);
+    drawList->AddText(ImVec2(panelPos.x + 12, panelPos.y + 168), IM_COL32(180, 220, 255, 255), buffer);
 
     std::snprintf(buffer, sizeof(buffer), "Vehicles: %d  Signals: %d", static_cast<int>(vehicles.size()), static_cast<int>(trafficLights.size()));
-    drawList->AddText(ImVec2(panelPos.x + 12, panelPos.y + 172), IM_COL32(180, 220, 255, 255), buffer);
+    drawList->AddText(ImVec2(panelPos.x + 12, panelPos.y + 188), IM_COL32(180, 220, 255, 255), buffer);
 
     std::snprintf(buffer, sizeof(buffer), "Camera Zoom: %.2f", camera.getZoom());
-    drawList->AddText(ImVec2(panelPos.x + 12, panelPos.y + 192), IM_COL32(180, 220, 255, 255), buffer);
+    drawList->AddText(ImVec2(panelPos.x + 12, panelPos.y + 208), IM_COL32(180, 220, 255, 255), buffer);
+
+    // Draw the Cohen-Sutherland clip window outline on screen
+    ImVec2 dispSize = ImGui::GetIO().DisplaySize;
+    float cm = 80.0f;
+    drawList->AddRect(
+        ImVec2(cm, cm),
+        ImVec2(dispSize.x - cm, dispSize.y - cm),
+        IM_COL32(255, 80, 80, 220),
+        0.0f, 0, 2.5f
+    );
+    drawList->AddText(
+        ImVec2(cm + 6.0f, cm + 4.0f),
+        IM_COL32(255, 80, 80, 255),
+        "Cohen-Sutherland Clip Window"
+    );
 }
 
 bool Renderer::shouldShowLabel(const std::string& name) {

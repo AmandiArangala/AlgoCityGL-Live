@@ -1,0 +1,321 @@
+{
+  "name": "Borella Junction",
+  "latitude": 6.9115,
+  "longitude": 79.8691,
+  "defaultTrafficLevel": "MODERATE",
+  "roads": [
+    {
+      "id": "road_baseline_east",
+      "name": "Baseline Road East",
+      "lanes": 3,
+      "points": [
+        [630, 430], [750, 430], [900, 430], [1050, 430], [1150, 430]
+      ]
+    },
+    {
+      "id": "road_baseline_west",
+      "name": "Baseline Road West",
+      "lanes": 3,
+      "points": [
+        [630, 430], [500, 430], [350, 430], [200, 430], [100, 430]
+      ]
+    },
+    {
+      "id": "road_ds_north",
+      "name": "D.S. Senanayake Mawatha North",
+      "lanes": 2,
+      "points": [
+        [630, 430], [630, 330], [630, 220], [630, 130], [630, 80]
+      ]
+    },
+    {
+      "id": "road_ds_south",
+      "name": "D.S. Senanayake Mawatha South",
+      "lanes": 2,
+      "points": [
+        [630, 430], [630, 530], [630, 620], [630, 700]
+      ]
+    },
+    {
+      "id": "road_horton_ne",
+      "name": "Horton Place",
+      "lanes": 2,
+      "points": [
+        [630, 430], [730, 340], [860, 240], [990, 150], [1080, 100]
+      ]
+    },
+    {
+      "id": "road_highlevel_se",
+      "name": "High Level Road",
+      "lanes": 3,
+      "points": [
+        [630, 430], [740, 530], [870, 630], [980, 700], [1080, 750]
+      ]
+    },
+    {
+      "id": "road_peradeniya_nw",
+      "name": "Peradeniya Road",
+      "lanes": 2,
+      "points": [
+        [630, 430], [520, 340], [400, 250], [280, 170], [180, 110]
+      ]
+    },
+    {
+      "id": "road_wijerama_sw",
+      "name": "Wijerama Mawatha",
+      "lanes": 2,
+      "points": [
+        [630, 430], [520, 530], [400, 625], [290, 700], [200, 750]
+      ]
+    },
+    {
+      "id": "road_inner_ring",
+      "name": "Borella Inner Ring",
+      "lanes": 1,
+      "points": [
+        [680, 400], [700, 430], [680, 460], [630, 475], [580, 460], [560, 430], [580, 400], [630, 385], [680, 400]
+      ]
+    }
+  ],
+  "buildings": [
+    {
+      "id": "b_town_hall",
+      "name": "Colombo Town Hall",
+      "height": 80,
+      "base": [[660, 355], [780, 355], [780, 415], [660, 415]]
+    },
+    {
+      "id": "b_cargills",
+      "name": "Cargills Food City",
+      "height": 50,
+      "base": [[740, 440], [840, 440], [840, 500], [740, 500]]
+    },
+    {
+      "id": "b_borella_apts",
+      "name": "Borella Apartments",
+      "height": 95,
+      "base": [[850, 400], [980, 400], [980, 470], [850, 470]]
+    },
+    {
+      "id": "b_peoples_hospital",
+      "name": "Peoples Hospital",
+      "height": 70,
+      "base": [[800, 190], [990, 190], [990, 310], [800, 310]]
+    },
+    {
+      "id": "b_lady_ridgeway",
+      "name": "Lady Ridgeway Hospital",
+      "height": 65,
+      "base": [[210, 140], [380, 140], [380, 270], [210, 270]]
+    },
+    {
+      "id": "b_thimbirigasyaya",
+      "name": "Thimbirigasyaya Temple",
+      "height": 60,
+      "base": [[870, 130], [970, 130], [970, 210], [870, 210]]
+    },
+    {
+      "id": "b_national_hospital",
+      "name": "National Hospital",
+      "height": 85,
+      "base": [[490, 130], [620, 130], [620, 250], [490, 250]]
+    },
+    {
+      "id": "b_foundation",
+      "name": "Sri Lanka Foundation",
+      "height": 60,
+      "base": [[645, 130], [760, 130], [760, 250], [645, 250]]
+    },
+    {
+      "id": "b_colombo_cc",
+      "name": "Colombo City Centre",
+      "height": 110,
+      "base": [[360, 395], [500, 395], [500, 460], [360, 460]]
+    },
+    {
+      "id": "b_majestic_city",
+      "name": "Majestic City",
+      "height": 75,
+      "base": [[740, 620], [870, 620], [870, 710], [740, 710]]
+    },
+    {
+      "id": "b_methodist_college",
+      "name": "Methodist College",
+      "height": 55,
+      "base": [[160, 390], [310, 390], [310, 460], [160, 460]]
+    },
+    {
+      "id": "b_thurstan",
+      "name": "Thurstan College",
+      "height": 60,
+      "base": [[575, 490], [700, 490], [700, 575], [575, 575]]
+    },
+    {
+      "id": "b_bishop_college",
+      "name": "Bishop College of Education",
+      "height": 50,
+      "base": [[170, 510], [340, 510], [340, 620], [170, 620]]
+    },
+    {
+      "id": "b_de_zoysa",
+      "name": "De Zoysa Building",
+      "height": 70,
+      "base": [[420, 520], [550, 520], [550, 610], [420, 610]]
+    }
+  ],
+  "trafficLights": [
+    {
+      "id": "signal_junction_center",
+      "position": [630, 430],
+      "cycle": [10, 3, 10]
+    },
+    {
+      "id": "signal_baseline_east",
+      "position": [730, 430],
+      "cycle": [8, 2, 8]
+    },
+    {
+      "id": "signal_ds_north",
+      "position": [630, 340],
+      "cycle": [9, 2, 9]
+    },
+    {
+      "id": "signal_horton",
+      "position": [710, 370],
+      "cycle": [7, 2, 7]
+    },
+    {
+      "id": "signal_peradeniya",
+      "position": [545, 365],
+      "cycle": [8, 2, 8]
+    }
+  ],
+  "crossings": [
+    {
+      "id": "crossing_junction",
+      "points": [[610, 430], [650, 430]]
+    },
+    {
+      "id": "crossing_baseline",
+      "points": [[730, 415], [730, 445]]
+    },
+    {
+      "id": "crossing_ds",
+      "points": [[615, 340], [645, 340]]
+    }
+  ],
+  "routes": [
+    {
+      "id": "route_ew_cross",
+      "points": [
+        [1150, 425], [1050, 425], [900, 425], [750, 425],
+        [630, 430],
+        [500, 435], [350, 435], [200, 435], [100, 435]
+      ]
+    },
+    {
+      "id": "route_we_cross",
+      "points": [
+        [100, 435], [200, 435], [350, 435], [500, 435],
+        [630, 430],
+        [750, 425], [900, 425], [1050, 425], [1150, 425]
+      ]
+    },
+    {
+      "id": "route_n_to_se",
+      "points": [
+        [630, 80], [630, 130], [630, 220], [630, 330],
+        [630, 430],
+        [740, 530], [870, 630], [980, 700], [1080, 750]
+      ]
+    },
+    {
+      "id": "route_se_to_n",
+      "points": [
+        [1080, 750], [980, 700], [870, 630], [740, 530],
+        [630, 430],
+        [630, 330], [630, 220], [630, 130], [630, 80]
+      ]
+    },
+    {
+      "id": "route_ne_to_sw",
+      "points": [
+        [1080, 100], [990, 150], [860, 240], [730, 340],
+        [630, 430],
+        [520, 530], [400, 625], [290, 700], [200, 750]
+      ]
+    },
+    {
+      "id": "route_sw_to_ne",
+      "points": [
+        [200, 750], [290, 700], [400, 625], [520, 530],
+        [630, 430],
+        [730, 340], [860, 240], [990, 150], [1080, 100]
+      ]
+    },
+    {
+      "id": "route_nw_to_se",
+      "points": [
+        [180, 110], [280, 170], [400, 250], [520, 340],
+        [630, 430],
+        [740, 530], [870, 630], [980, 700], [1080, 750]
+      ]
+    },
+    {
+      "id": "route_se_to_nw",
+      "points": [
+        [1080, 750], [980, 700], [870, 630], [740, 530],
+        [630, 430],
+        [520, 340], [400, 250], [280, 170], [180, 110]
+      ]
+    },
+    {
+      "id": "route_s_to_n",
+      "points": [
+        [630, 700], [630, 620], [630, 530],
+        [630, 430],
+        [630, 330], [630, 220], [630, 130], [630, 80]
+      ]
+    },
+    {
+      "id": "route_n_to_w",
+      "points": [
+        [630, 80], [630, 130], [630, 220], [630, 330],
+        [630, 430],
+        [500, 430], [350, 430], [200, 430], [100, 430]
+      ]
+    },
+    {
+      "id": "route_e_to_ne",
+      "points": [
+        [1150, 430], [1050, 430], [900, 430], [750, 430],
+        [630, 430],
+        [730, 340], [860, 240], [990, 150], [1080, 100]
+      ]
+    },
+    {
+      "id": "route_nw_to_n",
+      "points": [
+        [180, 110], [280, 170], [400, 250], [520, 340],
+        [630, 430],
+        [630, 330], [630, 220], [630, 130], [630, 80]
+      ]
+    },
+    {
+      "id": "route_e_to_sw",
+      "points": [
+        [1150, 430], [900, 430], [750, 430],
+        [630, 430],
+        [520, 530], [400, 625], [200, 750]
+      ]
+    },
+    {
+      "id": "route_s_to_se",
+      "points": [
+        [630, 700], [630, 530],
+        [630, 430],
+        [740, 530], [870, 630], [1080, 750]
+      ]
+    }
+  ]
+}
