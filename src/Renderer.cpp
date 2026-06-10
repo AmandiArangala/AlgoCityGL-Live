@@ -303,11 +303,24 @@ void Renderer::drawTopDownBuildingFills(
 
         buildingIndex++;
 
-        // Convert base to screen coordinates
+        // Compute centroid
+        Vec2 worldCenter(0.0f, 0.0f);
+        for (const Vec2& pt : building.base) {
+            worldCenter.x += pt.x;
+            worldCenter.y += pt.y;
+        }
+        worldCenter.x /= building.base.size();
+        worldCenter.y /= building.base.size();
+
+        // Convert base to screen coordinates with footprint shrinking
         std::vector<ImVec2> base;
         base.reserve(building.base.size());
         for (const Vec2& point : building.base) {
-            Vec2 screenPoint = applyCamera(point, camera);
+            Vec2 shrunkPoint(
+                worldCenter.x + (point.x - worldCenter.x) * 0.82f,
+                worldCenter.y + (point.y - worldCenter.y) * 0.82f
+            );
+            Vec2 screenPoint = applyCamera(shrunkPoint, camera);
             base.push_back(ImVec2(screenPoint.x, screenPoint.y));
         }
 
@@ -456,14 +469,47 @@ void Renderer::drawBuildingFills2_5D(
         );
     };
 
-    int buildingIndex = 0;
+    // 1. Stage and depth-sort building indices back-to-front based on projection position
+    std::vector<std::pair<float, size_t>> sortedBuildings;
+    sortedBuildings.reserve(area.buildings.size());
 
-    for (const Building& building : area.buildings) {
-        if (building.base.size() < 3) {
-            continue;
+    for (size_t idx = 0; idx < area.buildings.size(); ++idx) {
+        const Building& b = area.buildings[idx];
+        if (b.base.size() < 3) continue;
+
+        // Compute centroid
+        Vec2 center(0.0f, 0.0f);
+        for (const Vec2& pt : b.base) {
+            center.x += pt.x;
+            center.y += pt.y;
         }
+        center.x /= b.base.size();
+        center.y /= b.base.size();
 
-        buildingIndex++;
+        // Depth metric: back-to-front sorting.
+        // points with smaller x+y are further away.
+        float depth = center.x + center.y;
+        sortedBuildings.push_back({depth, idx});
+    }
+
+    std::sort(sortedBuildings.begin(), sortedBuildings.end(),
+              [](const std::pair<float, size_t>& a, const std::pair<float, size_t>& b) {
+                  return a.first < b.first;
+              });
+
+    for (const auto& pair : sortedBuildings) {
+        size_t origIdx = pair.second;
+        const Building& building = area.buildings[origIdx];
+        int buildingIndex = static_cast<int>(origIdx) + 1;
+
+        // Compute centroid of this building for shrinking
+        Vec2 center(0.0f, 0.0f);
+        for (const Vec2& pt : building.base) {
+            center.x += pt.x;
+            center.y += pt.y;
+        }
+        center.x /= building.base.size();
+        center.y /= building.base.size();
 
         std::vector<ImVec2> base;
         std::vector<ImVec2> top;
@@ -471,7 +517,13 @@ void Renderer::drawBuildingFills2_5D(
         top.reserve(building.base.size());
 
         for (const Vec2& point : building.base) {
-            Vec2 projected = Projection2_5D::projectPoint(point);
+            // Shrink footprint towards center by 18% (scale factor 0.82)
+            Vec2 shrunkPoint(
+                center.x + (point.x - center.x) * 0.82f,
+                center.y + (point.y - center.y) * 0.82f
+            );
+
+            Vec2 projected = Projection2_5D::projectPoint(shrunkPoint);
             Vec2 projectedTop = Projection2_5D::shiftUp(projected, building.height);
 
             projected = applyCamera(projected, camera);
@@ -850,14 +902,35 @@ void Renderer::buildCityPixelScene(
     }
 
     for (const Building& building : area.buildings) {
-        if (building.base.size() < 2) {
+        if (building.base.size() < 3) {
             continue;
         }
 
+        // Compute centroid
+        Vec2 center(0.0f, 0.0f);
+        for (const Vec2& pt : building.base) {
+            center.x += pt.x;
+            center.y += pt.y;
+        }
+        center.x /= building.base.size();
+        center.y /= building.base.size();
+
         if (!isometricMode) {
             for (size_t i = 0; i < building.base.size(); i++) {
-                Vec2 a = applyCamera(building.base[i], camera);
-                Vec2 b = applyCamera(building.base[(i + 1) % building.base.size()], camera);
+                Vec2 ptA = building.base[i];
+                Vec2 ptB = building.base[(i + 1) % building.base.size()];
+
+                Vec2 shrunkA(
+                    center.x + (ptA.x - center.x) * 0.82f,
+                    center.y + (ptA.y - center.y) * 0.82f
+                );
+                Vec2 shrunkB(
+                    center.x + (ptB.x - center.x) * 0.82f,
+                    center.y + (ptB.y - center.y) * 0.82f
+                );
+
+                Vec2 a = applyCamera(shrunkA, camera);
+                Vec2 b = applyCamera(shrunkB, camera);
 
                 drawLineClipped(a, b, buildingColor, false);
             }
@@ -866,7 +939,13 @@ void Renderer::buildCityPixelScene(
             std::vector<Vec2> top;
 
             for (const Vec2& point : building.base) {
-                Vec2 projected = Projection2_5D::projectPoint(point);
+                // Shrink footprint towards center by 18% (scale factor 0.82)
+                Vec2 shrunkPoint(
+                    center.x + (point.x - center.x) * 0.82f,
+                    center.y + (point.y - center.y) * 0.82f
+                );
+
+                Vec2 projected = Projection2_5D::projectPoint(shrunkPoint);
                 Vec2 projectedTop = Projection2_5D::shiftUp(projected, building.height);
 
                 projected = applyCamera(projected, camera);
