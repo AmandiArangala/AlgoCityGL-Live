@@ -48,8 +48,7 @@ private:
 
     void drawBuildingFills2_5D(const CityArea& area, const LiveContextEngine& liveContext, const Camera2D& camera);
     void drawTopDownBuildingFills(const CityArea& area, const LiveContextEngine& liveContext, const Camera2D& camera);
-    void drawTopDownRoadFills(const CityArea& area, const Camera2D& camera);
-    void drawIsometricRoadFills(const CityArea& area, const Camera2D& camera);
+    void drawRoads(const CityArea& area, bool isometricMode, const Camera2D& camera);
 
     void drawRuntimeTrafficLights(
         const std::vector<RuntimeTrafficLight>& trafficLights,
@@ -114,12 +113,13 @@ private:
         const LiveContextEngine& liveContext
     );
 
-    void drawRoadSegment(
+    void drawRoadMarkings(
         ImDrawList* drawList,
         const Vec2& a,
         const Vec2& b,
         int lanes,
-        const Camera2D& camera
+        float roadWidth,
+        float z
     );
 
     void drawEnvironmentDetails(

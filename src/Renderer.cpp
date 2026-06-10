@@ -41,11 +41,10 @@ void Renderer::renderCityArea(
     drawGround(liveContext);
 
     // 2. Draw roads and buildings
+    drawRoads(area, isometricMode, camera);
     if (isometricMode) {
-        drawIsometricRoadFills(area, camera);
         drawBuildingFills2_5D(area, liveContext, camera);
     } else {
-        drawTopDownRoadFills(area, camera);
         drawTopDownBuildingFills(area, liveContext, camera);
     }
 
@@ -104,44 +103,104 @@ Vec2 Renderer::applyCamera(const Vec2& point, const Camera2D& camera) {
     return camera.worldToScreen(point);
 }
 
-void Renderer::drawTopDownRoadFills(const CityArea& area, const Camera2D& camera) {
+void Renderer::drawRoads(
+    const CityArea& area,
+    bool isometricMode,
+    const Camera2D& camera
+) {
     ImDrawList* drawList = ImGui::GetBackgroundDrawList();
+    float z = camera.getZoom();
+
+    struct StagedRoad {
+        std::vector<ImVec2> points;
+        int lanes;
+        float roadWidth;
+        float sidewalkWidth;
+        float curbWidth;
+    };
+
+    std::vector<StagedRoad> stagedRoads;
+    stagedRoads.reserve(area.roads.size());
 
     for (const Road& road : area.roads) {
-        for (size_t i = 0; i + 1 < road.points.size(); i++) {
-            Vec2 a = applyCamera(road.points[i], camera);
-            Vec2 b = applyCamera(road.points[i + 1], camera);
+        if (road.points.size() < 2) {
+            continue;
+        }
 
-            drawRoadSegment(drawList, a, b, road.lanes, camera);
+        StagedRoad staged;
+        staged.lanes = road.lanes;
+        staged.roadWidth = (road.lanes == 1 ? 18.0f : (road.lanes == 2 ? 30.0f : 44.0f)) * z;
+        staged.sidewalkWidth = staged.roadWidth + 6.0f * z;
+        staged.curbWidth = staged.roadWidth + 2.0f * z;
+
+        staged.points.reserve(road.points.size());
+        for (const Vec2& p : road.points) {
+            Vec2 proj = transformForView(p, isometricMode);
+            proj = applyCamera(proj, camera);
+            staged.points.push_back(ImVec2(proj.x, proj.y));
+        }
+        stagedRoads.push_back(staged);
+    }
+
+    // Pass 1: Draw Sidewalks (Concrete Base)
+    ImU32 sidewalkColor = IM_COL32(145, 145, 150, 255);
+    for (const auto& road : stagedRoads) {
+        float r = road.sidewalkWidth * 0.5f;
+        for (const auto& p : road.points) {
+            drawList->AddCircleFilled(p, r, sidewalkColor);
+        }
+        for (size_t i = 0; i + 1 < road.points.size(); i++) {
+            drawList->AddLine(road.points[i], road.points[i + 1], sidewalkColor, road.sidewalkWidth);
+        }
+    }
+
+    // Pass 2: Draw Curbs (White Highlights)
+    ImU32 curbColor = IM_COL32(230, 230, 235, 255);
+    for (const auto& road : stagedRoads) {
+        float r = road.curbWidth * 0.5f;
+        for (const auto& p : road.points) {
+            drawList->AddCircleFilled(p, r, curbColor);
+        }
+        for (size_t i = 0; i + 1 < road.points.size(); i++) {
+            drawList->AddLine(road.points[i], road.points[i + 1], curbColor, road.curbWidth);
+        }
+    }
+
+    // Pass 3: Draw Asphalt (Dark Gray Road Bed)
+    ImU32 asphaltColor = IM_COL32(40, 40, 44, 255);
+    for (const auto& road : stagedRoads) {
+        float r = road.roadWidth * 0.5f;
+        for (const auto& p : road.points) {
+            drawList->AddCircleFilled(p, r, asphaltColor);
+        }
+        for (size_t i = 0; i + 1 < road.points.size(); i++) {
+            drawList->AddLine(road.points[i], road.points[i + 1], asphaltColor, road.roadWidth);
+        }
+    }
+
+    // Pass 4: Draw Lane Markings
+    for (const auto& road : stagedRoads) {
+        for (size_t i = 0; i + 1 < road.points.size(); i++) {
+            drawRoadMarkings(
+                drawList,
+                Vec2(road.points[i].x, road.points[i].y),
+                Vec2(road.points[i + 1].x, road.points[i + 1].y),
+                road.lanes,
+                road.roadWidth,
+                z
+            );
         }
     }
 }
 
-void Renderer::drawIsometricRoadFills(const CityArea& area, const Camera2D& camera) {
-    ImDrawList* drawList = ImGui::GetBackgroundDrawList();
-
-    for (const Road& road : area.roads) {
-        for (size_t i = 0; i + 1 < road.points.size(); i++) {
-            Vec2 a = transformForView(road.points[i], true);
-            Vec2 b = transformForView(road.points[i + 1], true);
-
-            a = applyCamera(a, camera);
-            b = applyCamera(b, camera);
-
-            drawRoadSegment(drawList, a, b, road.lanes, camera);
-        }
-    }
-}
-
-void Renderer::drawRoadSegment(
+void Renderer::drawRoadMarkings(
     ImDrawList* drawList,
     const Vec2& a,
     const Vec2& b,
     int lanes,
-    const Camera2D& camera
+    float roadWidth,
+    float z
 ) {
-    float z = camera.getZoom();
-
     float dx = b.x - a.x;
     float dy = b.y - a.y;
     float len = std::sqrt(dx * dx + dy * dy);
@@ -150,33 +209,6 @@ void Renderer::drawRoadSegment(
     float nx = -dy / len;
     float ny = dx / len;
 
-    // Width adjusts dynamically to number of lanes
-    float roadWidth = (lanes == 1 ? 18.0f : (lanes == 2 ? 30.0f : 44.0f)) * z;
-
-    // 1. Asphalt base fill
-    drawList->AddLine(
-        ImVec2(a.x, a.y),
-        ImVec2(b.x, b.y),
-        IM_COL32(40, 40, 44, 255),
-        roadWidth
-    );
-
-    // 2. White outer shoulder/curb lines
-    float offsetWhite = (roadWidth * 0.5f) - (1.5f * z);
-    drawList->AddLine(
-        ImVec2(a.x + nx * offsetWhite, a.y + ny * offsetWhite),
-        ImVec2(b.x + nx * offsetWhite, b.y + ny * offsetWhite),
-        IM_COL32(200, 200, 205, 140),
-        1.5f * z
-    );
-    drawList->AddLine(
-        ImVec2(a.x - nx * offsetWhite, a.y - ny * offsetWhite),
-        ImVec2(b.x - nx * offsetWhite, b.y - ny * offsetWhite),
-        IM_COL32(200, 200, 205, 140),
-        1.5f * z
-    );
-
-    // 3. Lane division markings
     if (lanes == 1) {
         // Single yellow line for narrow single lanes
         drawList->AddLine(
@@ -2103,50 +2135,6 @@ void Renderer::drawEnvironmentDetails(
     const Camera2D& camera
 ) {
     ImDrawList* drawList = ImGui::GetBackgroundDrawList();
-
-    // Light sidewalk/road shoulder lines beside each road.
-    for (const Road& road : area.roads) {
-        for (size_t i = 0; i + 1 < road.points.size(); i++) {
-            Vec2 a = transformForView(road.points[i], isometricMode);
-            Vec2 b = transformForView(road.points[i + 1], isometricMode);
-
-            a = applyCamera(a, camera);
-            b = applyCamera(b, camera);
-
-            float dx = b.x - a.x;
-            float dy = b.y - a.y;
-            float length = std::sqrt(dx * dx + dy * dy);
-
-            if (length <= 0.01f) {
-                continue;
-            }
-
-            float nx = -dy / length;
-            float ny = dx / length;
-
-            float offset = 13.0f * camera.getZoom();
-
-            ImVec2 leftA(a.x + nx * offset, a.y + ny * offset);
-            ImVec2 leftB(b.x + nx * offset, b.y + ny * offset);
-
-            ImVec2 rightA(a.x - nx * offset, a.y - ny * offset);
-            ImVec2 rightB(b.x - nx * offset, b.y - ny * offset);
-
-            drawList->AddLine(
-                leftA,
-                leftB,
-                IM_COL32(130, 130, 135, 120),
-                2.0f * camera.getZoom()
-            );
-
-            drawList->AddLine(
-                rightA,
-                rightB,
-                IM_COL32(130, 130, 135, 120),
-                2.0f * camera.getZoom()
-            );
-        }
-    }
 
     // Small junction circles to make intersections clearer.
     for (const TrafficLight& light : area.trafficLights) {
