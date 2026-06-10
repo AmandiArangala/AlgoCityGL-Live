@@ -6,7 +6,19 @@ void VehicleController::initializeFromArea(const CityArea& area) {
 
     std::cout << "Initializing vehicles from routes..." << std::endl;
 
+    int skipStep = 1;
+    if (area.routes.size() > 150) {
+        skipStep = 4; // Capping vehicle density to ~25% for dense real-world maps (e.g. Borella, Pettah)
+    }
+
+    int index = 0;
     for (const VehicleRoute& route : area.routes) {
+        if (index % skipStep != 0) {
+            index++;
+            continue;
+        }
+        index++;
+
         std::cout << "Checking route: " << route.id
                   << " with " << route.points.size()
                   << " points" << std::endl;

@@ -19,6 +19,9 @@ public:
     float getAngle() const;
     float getSpeed() const;
     bool getIsStopped() const;
+    int getCurrentTargetIndex() const;
+    int getRouteSize() const;
+    float getOpacity() const;
     Matrix3x3 getTransformMatrix() const;
 
 private:
@@ -29,6 +32,7 @@ private:
     Vec2 position;
     float angleDegrees;
     float speed;
+    float opacity = 1.0f;
 
     int currentTargetIndex;
     bool routeReady;

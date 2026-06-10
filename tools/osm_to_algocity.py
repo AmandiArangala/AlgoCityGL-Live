@@ -13,8 +13,33 @@ AREA_CONFIGS = [
         "max_buildings": 35,
         "max_signals": 6,
         "max_crossings": 12
+    },
+    {
+        "area_name": "Pettah / Colombo Fort Real Area",
+        "input_file": Path("../data/osm/pettah_raw_osm.geojson"),
+        "output_file": Path("../data/pettah_area_real.json"),
+        "scale": 120000,
+        "offset_x": 500,
+        "offset_y": 350,
+        "max_roads": 350,
+        "max_buildings": 250,
+        "max_signals": 25,
+        "max_crossings": 35
+    },
+    {
+        "area_name": "Borella Junction Real Area",
+        "input_file": Path("../data/osm/borella_raw_osm.geojson"),
+        "output_file": Path("../data/borella_area_real.json"),
+        "scale": 120000,
+        "offset_x": 500,
+        "offset_y": 350,
+        "max_roads": 350,
+        "max_buildings": 250,
+        "max_signals": 25,
+        "max_crossings": 35
     }
 ]
+
 
 def load_geojson(path):
     with open(path, "r", encoding="utf-8") as f:

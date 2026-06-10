@@ -10,6 +10,8 @@
 #include "Camera2D.h"
 #include "LiveContextEngine.h"
 
+struct ImDrawList;
+
 class Renderer {
 public:
     void initialize();
@@ -44,8 +46,8 @@ private:
     Vec2 transformForView(const Vec2& point, bool isometricMode);
     Vec2 applyCamera(const Vec2& point, const Camera2D& camera);
 
-    void drawBuildingFills2_5D(const CityArea& area, const Camera2D& camera);
-    void drawTopDownBuildingFills(const CityArea& area, const Camera2D& camera);
+    void drawBuildingFills2_5D(const CityArea& area, const LiveContextEngine& liveContext, const Camera2D& camera);
+    void drawTopDownBuildingFills(const CityArea& area, const LiveContextEngine& liveContext, const Camera2D& camera);
     void drawTopDownRoadFills(const CityArea& area, const Camera2D& camera);
     void drawIsometricRoadFills(const CityArea& area, const Camera2D& camera);
 
@@ -108,6 +110,18 @@ private:
         const Camera2D& camera
     );
 
+    void drawGround(
+        const LiveContextEngine& liveContext
+    );
+
+    void drawRoadSegment(
+        ImDrawList* drawList,
+        const Vec2& a,
+        const Vec2& b,
+        int lanes,
+        const Camera2D& camera
+    );
+
     void drawEnvironmentDetails(
         const CityArea& area,
         bool isometricMode,
@@ -128,6 +142,12 @@ private:
 
     void drawStopLines(
         const std::vector<RuntimeTrafficLight>& trafficLights,
+        bool isometricMode,
+        const Camera2D& camera
+    );
+
+    void drawPedestrianCrossings(
+        const CityArea& area,
         bool isometricMode,
         const Camera2D& camera
     );

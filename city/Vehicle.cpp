@@ -76,6 +76,7 @@ void Vehicle::update(float deltaTime, const std::vector<RuntimeTrafficLight>& tr
         if (currentTargetIndex >= static_cast<int>(route.size())) {
             currentTargetIndex = 1;
             position = route[0];
+            opacity = 1.0f;
         }
 
         return;
@@ -87,6 +88,8 @@ void Vehicle::update(float deltaTime, const std::vector<RuntimeTrafficLight>& tr
     position.y += dir.y * speed * deltaTime;
 
     angleDegrees = std::atan2(dir.y, dir.x) * 180.0f / 3.14159265f;
+
+    opacity = 1.0f;
 
     updateTransform();
 }
@@ -154,6 +157,18 @@ float Vehicle::getSpeed() const {
 
 bool Vehicle::getIsStopped() const {
     return stoppedAtRedLight;
+}
+
+int Vehicle::getCurrentTargetIndex() const {
+    return currentTargetIndex;
+}
+
+int Vehicle::getRouteSize() const {
+    return static_cast<int>(route.size());
+}
+
+float Vehicle::getOpacity() const {
+    return opacity;
 }
 
 Matrix3x3 Vehicle::getTransformMatrix() const {
