@@ -110,7 +110,10 @@ private:
     );
 
     void drawGround(
-        const LiveContextEngine& liveContext
+        const CityArea& area,
+        const LiveContextEngine& liveContext,
+        bool isometricMode,
+        const Camera2D& camera
     );
 
     void drawRoadMarkings(

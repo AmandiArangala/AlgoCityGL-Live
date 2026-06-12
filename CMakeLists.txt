@@ -43,7 +43,10 @@ add_executable(AlgoCityGL_Live
     ${IMGUI_DIR}/backends/imgui_impl_opengl3.cpp
 )
 
-find_package(glfw3 REQUIRED)
+if(NOT WIN32)
+    find_package(glfw3 REQUIRED)
+endif()
+
 
 target_include_directories(AlgoCityGL_Live PRIVATE
     include
