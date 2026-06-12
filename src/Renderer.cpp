@@ -282,8 +282,8 @@ void Renderer::drawTopDownBuildingFills(
         base.reserve(building.base.size());
         for (const Vec2& point : building.base) {
             Vec2 shrunkPoint(
-                worldCenter.x + (point.x - worldCenter.x) * 0.82f,
-                worldCenter.y + (point.y - worldCenter.y) * 0.82f
+                worldCenter.x + (point.x - worldCenter.x) * 0.55f,
+                worldCenter.y + (point.y - worldCenter.y) * 0.55f
             );
             Vec2 screenPoint = applyCamera(shrunkPoint, camera);
             base.push_back(ImVec2(screenPoint.x, screenPoint.y));
@@ -481,10 +481,10 @@ void Renderer::drawBuildingFills2_5D(
         top.reserve(building.base.size());
 
         for (const Vec2& point : building.base) {
-            // Shrink footprint towards center by 18% (scale factor 0.82)
+            // Shrink footprint towards center (scale factor 0.55)
             Vec2 shrunkPoint(
-                center.x + (point.x - center.x) * 0.82f,
-                center.y + (point.y - center.y) * 0.82f
+                center.x + (point.x - center.x) * 0.55f,
+                center.y + (point.y - center.y) * 0.55f
             );
 
             Vec2 projected = Projection2_5D::projectPoint(shrunkPoint);
@@ -903,12 +903,12 @@ void Renderer::buildCityPixelScene(
                 Vec2 ptB = building.base[(i + 1) % building.base.size()];
 
                 Vec2 shrunkA(
-                    center.x + (ptA.x - center.x) * 0.82f,
-                    center.y + (ptA.y - center.y) * 0.82f
+                    center.x + (ptA.x - center.x) * 0.55f,
+                    center.y + (ptA.y - center.y) * 0.55f
                 );
                 Vec2 shrunkB(
-                    center.x + (ptB.x - center.x) * 0.82f,
-                    center.y + (ptB.y - center.y) * 0.82f
+                    center.x + (ptB.x - center.x) * 0.55f,
+                    center.y + (ptB.y - center.y) * 0.55f
                 );
 
                 Vec2 a = applyCamera(shrunkA, camera);
@@ -921,10 +921,10 @@ void Renderer::buildCityPixelScene(
             std::vector<Vec2> top;
 
             for (const Vec2& point : building.base) {
-                // Shrink footprint towards center by 18% (scale factor 0.82)
+                // Shrink footprint towards center (scale factor 0.55)
                 Vec2 shrunkPoint(
-                    center.x + (point.x - center.x) * 0.82f,
-                    center.y + (point.y - center.y) * 0.82f
+                    center.x + (point.x - center.x) * 0.55f,
+                    center.y + (point.y - center.y) * 0.55f
                 );
 
                 Vec2 projected = Projection2_5D::projectPoint(shrunkPoint);
@@ -2349,7 +2349,7 @@ void Renderer::drawTrees(
     ImDrawList* drawList = ImGui::GetBackgroundDrawList();
     ImVec2 displaySize = ImGui::GetIO().DisplaySize;
     float baseZ = camera.getZoom();
-    float z = baseZ * 2.5f; // Scale up all nature elements
+    float z = baseZ * 3.5f; // Scale up all nature elements for a dense, lively mainland
 
     if (area.buildings.empty() && area.roads.empty()) return;
 
@@ -2384,22 +2384,22 @@ void Renderer::drawTrees(
             for (const Vec2& bp : b.base) {
                 float dx = bp.x - x;
                 float dy = bp.y - y;
-                if (dx * dx + dy * dy < 25000.0f) return false; // ~158 units
+                if (dx * dx + dy * dy < 7000.0f) return false; // ~83 units
             }
         }
         for (const Road& r : area.roads) {
             for (const Vec2& rp : r.points) {
                 float dx = rp.x - x;
                 float dy = rp.y - y;
-                if (dx * dx + dy * dy < 15000.0f) return false; // ~122 units
+                if (dx * dx + dy * dy < 4500.0f) return false; // ~67 units
             }
         }
         return true;
     };
 
-    int maxTrees = 1500;
+    int maxTrees = 15000;
     int treeCount = 0;
-    float gridStep = 150.0f;
+    float gridStep = 75.0f;
 
     for (float x = minX; x <= maxX; x += gridStep) {
         for (float y = minY; y <= maxY; y += gridStep) {
