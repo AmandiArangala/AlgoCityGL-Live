@@ -59,6 +59,13 @@ private:
     void drawVehicles(
         const std::vector<Vehicle>& vehicles,
         bool isometricMode,
+        const Camera2D& camera,
+        const LiveContextEngine& liveContext
+    );
+
+    void drawPedestriansAndPets(
+        const CityArea& area,
+        bool isometricMode,
         const Camera2D& camera
     );
 
@@ -109,12 +116,9 @@ private:
         const Camera2D& camera
     );
 
-    void drawGround(
-        const CityArea& area,
-        const LiveContextEngine& liveContext,
-        bool isometricMode,
-        const Camera2D& camera
-    );
+    void drawSkyBackground(const LiveContextEngine& liveContext);
+    void drawGround(const CityArea& area, bool isometricMode, const Camera2D& camera, const LiveContextEngine& liveContext);
+    void drawForegroundBirds(const Camera2D& camera);
 
     void drawRoadMarkings(
         ImDrawList* drawList,
