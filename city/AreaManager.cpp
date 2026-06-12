@@ -10,9 +10,10 @@ Vec2 AreaManager::parsePoint(const json& pointJson) {
         return Vec2(0.0f, 0.0f);
     }
 
+    const float SPREAD_FACTOR = 3.0f;
     return Vec2(
-        pointJson[0].get<float>(),
-        pointJson[1].get<float>()
+        pointJson[0].get<float>() * SPREAD_FACTOR,
+        pointJson[1].get<float>() * SPREAD_FACTOR
     );
 }
 
@@ -62,7 +63,7 @@ bool AreaManager::loadAreaFromFile(const std::string& filePath) {
             Building building;
             building.id = buildingJson.value("id", "");
             building.name = buildingJson.value("name", "");
-            building.height = buildingJson.value("height", 50.0f);
+            building.height = buildingJson.value("height", 50.0f) * 3.0f;
 
             if (buildingJson.contains("base")) {
                 for (const auto& pointJson : buildingJson["base"]) {

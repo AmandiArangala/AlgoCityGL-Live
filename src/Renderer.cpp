@@ -13,6 +13,7 @@
 #include <cstdio>
 #include <string>
 #include <cmath>
+#include <algorithm>
 
 void Renderer::initialize() {
     glClearColor(0.08f, 0.10f, 0.13f, 1.0f);
@@ -38,7 +39,7 @@ void Renderer::renderCityArea(
     const Camera2D& camera
 ) {
     // 1. Draw background ground terrain and grid
-    drawGround(liveContext);
+    drawGround(area, isometricMode, camera, liveContext);
 
     // 2. Draw roads and buildings
     drawRoads(area, isometricMode, camera);
@@ -69,11 +70,13 @@ void Renderer::renderCityArea(
     drawPedestrianCrossings(area, isometricMode, camera);
 
     drawRuntimeTrafficLights(trafficLights, isometricMode, camera);
-    drawVehicles(vehicles, isometricMode, camera);
+    drawVehicles(vehicles, isometricMode, camera, liveContext);
     drawMiniMap(area, vehicles, camera);
 
     drawRoadLabels(area, isometricMode, camera);
     drawBuildingLabels(area, isometricMode, camera);
+
+    drawPedestriansAndPets(area, isometricMode, camera);
 
     if (liveContext.isRainMode()) {
         drawRainEffect();
@@ -129,9 +132,9 @@ void Renderer::drawRoads(
 
         StagedRoad staged;
         staged.lanes = road.lanes;
-        staged.roadWidth = (road.lanes == 1 ? 18.0f : (road.lanes == 2 ? 30.0f : 44.0f)) * z;
-        staged.sidewalkWidth = staged.roadWidth + 6.0f * z;
-        staged.curbWidth = staged.roadWidth + 2.0f * z;
+        staged.roadWidth = (road.lanes == 1 ? 40.0f : (road.lanes == 2 ? 65.0f : 90.0f)) * z; // Wider roads
+        staged.sidewalkWidth = staged.roadWidth + 18.0f * z;
+        staged.curbWidth = staged.roadWidth + 4.0f * z;
 
         staged.points.reserve(road.points.size());
         for (const Vec2& p : road.points) {
@@ -142,8 +145,8 @@ void Renderer::drawRoads(
         stagedRoads.push_back(staged);
     }
 
-    // Pass 1: Draw Sidewalks (Concrete Base)
-    ImU32 sidewalkColor = IM_COL32(145, 145, 150, 255);
+    // Pass 1: Draw Sidewalks (Tan Base)
+    ImU32 sidewalkColor = IM_COL32(180, 160, 140, 255);
     for (const auto& road : stagedRoads) {
         float r = road.sidewalkWidth * 0.5f;
         for (const auto& p : road.points) {
@@ -167,7 +170,7 @@ void Renderer::drawRoads(
     }
 
     // Pass 3: Draw Asphalt (Dark Gray Road Bed)
-    ImU32 asphaltColor = IM_COL32(40, 40, 44, 255);
+    ImU32 asphaltColor = IM_COL32(60, 60, 65, 255);
     for (const auto& road : stagedRoads) {
         float r = road.roadWidth * 0.5f;
         for (const auto& p : road.points) {
@@ -209,73 +212,35 @@ void Renderer::drawRoadMarkings(
     float nx = -dy / len;
     float ny = dx / len;
 
+    // Base setup for dashed lines
+    float dashLen = 14.0f * z;
+    float gapLen = 10.0f * z;
+    float totalStep = dashLen + gapLen;
+
+    auto drawDashedLine = [&](float sideOffset) {
+        float dist = 0.0f;
+        while (dist < len) {
+            float startT = dist / len;
+            float endT = std::min(dist + dashLen, len) / len;
+
+            ImVec2 pt1(a.x + dx * startT + nx * sideOffset, a.y + dy * startT + ny * sideOffset);
+            ImVec2 pt2(a.x + dx * endT + nx * sideOffset, a.y + dy * endT + ny * sideOffset);
+
+            drawList->AddLine(pt1, pt2, IM_COL32(255, 255, 255, 220), 2.5f * z);
+            dist += totalStep;
+        }
+    };
+
     if (lanes == 1) {
-        // Single yellow line for narrow single lanes
-        drawList->AddLine(
-            ImVec2(a.x, a.y),
-            ImVec2(b.x, b.y),
-            IM_COL32(235, 195, 50, 200),
-            1.5f * z
-        );
+        drawDashedLine(0.0f);
     } else if (lanes == 2) {
-        // Double yellow line for standard two lanes
-        float dyell = 2.0f * z;
-        drawList->AddLine(
-            ImVec2(a.x + nx * dyell, a.y + ny * dyell),
-            ImVec2(b.x + nx * dyell, b.y + ny * dyell),
-            IM_COL32(235, 195, 50, 210),
-            1.2f * z
-        );
-        drawList->AddLine(
-            ImVec2(a.x - nx * dyell, a.y - ny * dyell),
-            ImVec2(b.x - nx * dyell, b.y - ny * dyell),
-            IM_COL32(235, 195, 50, 210),
-            1.2f * z
-        );
+        drawDashedLine(0.0f);
     } else {
-        // 3+ lanes: Double yellow center divider + dashed white lane separators on sides
-        float dyell = 2.5f * z;
-        drawList->AddLine(
-            ImVec2(a.x + nx * dyell, a.y + ny * dyell),
-            ImVec2(b.x + nx * dyell, b.y + ny * dyell),
-            IM_COL32(235, 195, 50, 210),
-            1.2f * z
-        );
-        drawList->AddLine(
-            ImVec2(a.x - nx * dyell, a.y - ny * dyell),
-            ImVec2(b.x - nx * dyell, b.y - ny * dyell),
-            IM_COL32(235, 195, 50, 210),
-            1.2f * z
-        );
+        // 3+ lanes: center dashed and side dashed
+        drawDashedLine(0.0f);
+        drawDashedLine(roadWidth * 0.25f);
+        drawDashedLine(-roadWidth * 0.25f);
 
-        // Dashed lines
-        float dashLen = 14.0f * z;
-        float gapLen = 10.0f * z;
-        float totalStep = dashLen + gapLen;
-        float offsetDashed = roadWidth * 0.25f;
-
-        auto drawDashed = [&](float sideOffset) {
-            float distTravelled = 0.0f;
-            while (distTravelled < len) {
-                float tStart = distTravelled / len;
-                float tEnd = std::min(distTravelled + dashLen, len) / len;
-
-                ImVec2 pStart(
-                    a.x + dx * tStart + nx * sideOffset,
-                    a.y + dy * tStart + ny * sideOffset
-                );
-                ImVec2 pEnd(
-                    a.x + dx * tEnd + nx * sideOffset,
-                    a.y + dy * tEnd + ny * sideOffset
-                );
-
-                drawList->AddLine(pStart, pEnd, IM_COL32(255, 255, 255, 160), 1.2f * z);
-                distTravelled += totalStep;
-            }
-        };
-
-        drawDashed(offsetDashed);
-        drawDashed(-offsetDashed);
     }
 }
 
@@ -477,18 +442,17 @@ void Renderer::drawBuildingFills2_5D(
         const Building& b = area.buildings[idx];
         if (b.base.size() < 3) continue;
 
-        // Compute centroid
-        Vec2 center(0.0f, 0.0f);
+        // Compute bounding box minimums for robust isometric depth sorting
+        float minX = 999999.0f;
+        float minY = 999999.0f;
         for (const Vec2& pt : b.base) {
-            center.x += pt.x;
-            center.y += pt.y;
+            if (pt.x < minX) minX = pt.x;
+            if (pt.y < minY) minY = pt.y;
         }
-        center.x /= b.base.size();
-        center.y /= b.base.size();
 
         // Depth metric: back-to-front sorting.
-        // points with smaller x+y are further away.
-        float depth = center.x + center.y;
+        // Buildings that start further back (smaller minX + minY) are drawn first.
+        float depth = minX + minY;
         sortedBuildings.push_back({depth, idx});
     }
 
@@ -670,50 +634,44 @@ void Renderer::drawBuildingFills2_5D(
             // 3. Draw Isometric Windows on Walls (if zoomed in enough)
             if (z > 0.45f) {
                 // Determine windows count based on building height/width
+                // Determine windows count based on building height
                 int num_rows = 3 + static_cast<int>(building.height / 30.0f);
-                int num_cols = 4;
                 bool isNight = liveContext.isNightMode();
 
                 for (int r = 0; r < num_rows; r++) {
-                    for (int c = 0; c < num_cols; c++) {
-                        float tx0 = (c + 0.20f) / num_cols;
-                        float tx1 = (c + 0.80f) / num_cols;
-                        float ty0 = (r + 0.20f) / num_rows;
-                        float ty1 = (r + 0.80f) / num_rows;
+                    float tx0 = 0.04f;
+                    float tx1 = 0.96f;
+                    float ty0 = (r + 0.30f) / num_rows;
+                    float ty1 = (r + 0.70f) / num_rows;
 
-                        auto getFacePoint = [&](float tx, float ty) {
-                            ImVec2 bot = lerp(sideFace[0], sideFace[1], tx);
-                            ImVec2 tp = lerp(sideFace[3], sideFace[2], tx);
-                            return lerp(bot, tp, ty);
-                        };
+                    auto getFacePoint = [&](float tx, float ty) {
+                        ImVec2 bot = lerp(sideFace[0], sideFace[1], tx);
+                        ImVec2 tp = lerp(sideFace[3], sideFace[2], tx);
+                        return lerp(bot, tp, ty);
+                    };
 
-                        ImVec2 w0 = getFacePoint(tx0, ty0);
-                        ImVec2 w1 = getFacePoint(tx1, ty0);
-                        ImVec2 w2 = getFacePoint(tx1, ty1);
-                        ImVec2 w3 = getFacePoint(tx0, ty1);
+                    ImVec2 w0 = getFacePoint(tx0, ty0);
+                    ImVec2 w1 = getFacePoint(tx1, ty0);
+                    ImVec2 w2 = getFacePoint(tx1, ty1);
+                    ImVec2 w3 = getFacePoint(tx0, ty1);
 
-                        ImVec2 windowPane[4] = { w0, w1, w2, w3 };
+                    ImVec2 windowPane[4] = { w0, w1, w2, w3 };
 
-                        // Dynamic windows glow color (night lit vs unlit, day cyan)
-                        ImU32 windowColor;
-                        if (isNight) {
-                            int hash = (r * 13 + c * 37 + buildingIndex * 97 + static_cast<int>(i) * 11) % 100;
-                            if (hash < 25) {
-                                windowColor = IM_COL32(255, 215, 80, 220); // Warm Lit
-                            } else if (hash < 40) {
-                                windowColor = IM_COL32(170, 240, 255, 190); // Office Lit
-                            } else {
-                                windowColor = IM_COL32(22, 26, 35, 240); // Dark
-                            }
+                    // Dark continuous window strip (unless night lit)
+                    ImU32 windowColor;
+                    if (isNight) {
+                        int hash = (r * 13 + buildingIndex * 97 + static_cast<int>(i) * 11) % 100;
+                        if (hash < 25) {
+                            windowColor = IM_COL32(255, 215, 80, 220); // Warm Lit
                         } else {
-                            windowColor = IM_COL32(185, 235, 255, 185); // Daytime sky reflection
+                            windowColor = IM_COL32(22, 26, 35, 240); // Dark
                         }
-
-                        drawList->AddConvexPolyFilled(windowPane, 4, windowColor);
-                        
-                        // Thin window frame
-                        drawList->AddPolyline(windowPane, 4, IM_COL32(35, 38, 42, 100), ImDrawFlags_Closed, 0.7f * z);
+                    } else {
+                        windowColor = IM_COL32(25, 30, 35, 245); // Dark tinted window strip
                     }
+
+                    drawList->AddConvexPolyFilled(windowPane, 4, windowColor);
+                    drawList->AddPolyline(windowPane, 4, IM_COL32(10, 15, 20, 100), ImDrawFlags_Closed, 0.5f * z);
                 }
             }
         }
@@ -754,6 +712,30 @@ void Renderer::drawBuildingFills2_5D(
             ImDrawFlags_Closed,
             1.2f * z
         );
+
+        // 5. Draw Billboards (on select rooftops)
+        if (buildingIndex % 5 == 0 && top.size() >= 2) {
+            ImVec2 p0 = top[0];
+            ImVec2 p1 = top[1];
+            
+            ImVec2 poleTop0(p0.x, p0.y - 12.0f * z);
+            ImVec2 poleTop1(p1.x, p1.y - 12.0f * z);
+            
+            // Poles
+            drawList->AddLine(p0, poleTop0, IM_COL32(120, 120, 120, 255), 2.5f * z);
+            drawList->AddLine(p1, poleTop1, IM_COL32(120, 120, 120, 255), 2.5f * z);
+            
+            // Billboard Board
+            float bbHeight = 18.0f * z;
+            ImVec2 bb0 = poleTop0;
+            ImVec2 bb1 = poleTop1;
+            ImVec2 bb2(bb1.x, bb1.y - bbHeight);
+            ImVec2 bb3(bb0.x, bb0.y - bbHeight);
+            
+            ImVec2 bbFace[4] = { bb0, bb1, bb2, bb3 };
+            drawList->AddConvexPolyFilled(bbFace, 4, IM_COL32(245, 245, 250, 255)); // Blank White Billboard
+            drawList->AddPolyline(bbFace, 4, IM_COL32(50, 50, 50, 255), ImDrawFlags_Closed, 1.5f * z); // Grey Frame
+        }
 
         // 5. Draw Roof Solar Panels (for obsidian buildings) or Helipad (for tall buildings)
         if (z > 0.40f) {
@@ -1036,7 +1018,8 @@ void Renderer::drawRuntimeTrafficLights(
 void Renderer::drawVehicles(
     const std::vector<Vehicle>& vehicles,
     bool isometricMode,
-    const Camera2D& camera
+    const Camera2D& camera,
+    const LiveContextEngine& liveContext
 ) {
     ImDrawList* drawList = ImGui::GetBackgroundDrawList();
 
@@ -1141,72 +1124,85 @@ void Renderer::drawVehicles(
             drawList->AddConvexPolyFilled(shadowVertices.data(), 4, getFadedColor(IM_COL32(0, 0, 0, 75), 1.0f));
 
             if (vType == 1) {
-                // --- BUS SHAPE (Single tall box with multiple windows) ---
+                // --- BUS SHAPE (Dual-tone White Top, Blue Bottom) ---
                 ImVec2 t0(p0.x, p0.y - H * 0.6f);
                 ImVec2 t1(p1.x, p1.y - H * 0.6f);
                 ImVec2 t2(p2.x, p2.y - H * 0.6f);
                 ImVec2 t3(p3.x, p3.y - H * 0.6f);
 
+                ImVec2 m0 = lerp(p0, t0, 0.4f); // Mid points for dual tone
+                ImVec2 m1 = lerp(p1, t1, 0.4f);
+                ImVec2 m2 = lerp(p2, t2, 0.4f);
+                ImVec2 m3 = lerp(p3, t3, 0.4f);
+
+                ImU32 busWhite = IM_COL32(235, 240, 245, 245);
+                ImU32 busBlue = IM_COL32(35, 105, 160, 245); // Darker blue matching the image
+
                 // Rear Face
                 ImVec2 rearFace[4] = { p0, p3, t3, t0 };
-                drawList->AddConvexPolyFilled(rearFace, 4, getFadedColor(baseColor, 0.70f));
+                drawList->AddConvexPolyFilled(rearFace, 4, getFadedColor(busWhite, 0.70f));
+                ImVec2 rearFaceBot[4] = { p0, p3, m3, m0 };
+                drawList->AddConvexPolyFilled(rearFaceBot, 4, getFadedColor(busBlue, 0.70f));
                 drawList->AddPolyline(rearFace, 4, getFadedColor(IM_COL32(0, 0, 0, 40), 1.0f), ImDrawFlags_Closed, 1.0f * z);
 
                 // Left Face (Side)
                 ImVec2 leftFace[4] = { p0, p1, t1, t0 };
-                drawList->AddConvexPolyFilled(leftFace, 4, getFadedColor(baseColor, 1.15f));
+                drawList->AddConvexPolyFilled(leftFace, 4, getFadedColor(busWhite, 1.15f));
+                ImVec2 leftFaceBot[4] = { p0, p1, m1, m0 };
+                drawList->AddConvexPolyFilled(leftFaceBot, 4, getFadedColor(busBlue, 1.15f));
                 drawList->AddPolyline(leftFace, 4, getFadedColor(IM_COL32(255, 255, 255, 60), 1.0f), ImDrawFlags_Closed, 1.0f * z);
 
                 // Right Face (Side)
                 ImVec2 rightFace[4] = { p3, p2, t2, t3 };
-                drawList->AddConvexPolyFilled(rightFace, 4, getFadedColor(baseColor, 0.85f));
+                drawList->AddConvexPolyFilled(rightFace, 4, getFadedColor(busWhite, 0.85f));
+                ImVec2 rightFaceBot[4] = { p3, p2, m2, m3 };
+                drawList->AddConvexPolyFilled(rightFaceBot, 4, getFadedColor(busBlue, 0.85f));
                 drawList->AddPolyline(rightFace, 4, getFadedColor(IM_COL32(0, 0, 0, 50), 1.0f), ImDrawFlags_Closed, 1.0f * z);
 
                 // Front Face
                 ImVec2 frontFace[4] = { p1, p2, t2, t1 };
-                drawList->AddConvexPolyFilled(frontFace, 4, getFadedColor(baseColor, 1.05f));
+                drawList->AddConvexPolyFilled(frontFace, 4, getFadedColor(busWhite, 1.05f));
+                ImVec2 frontFaceBot[4] = { p1, p2, m2, m1 };
+                drawList->AddConvexPolyFilled(frontFaceBot, 4, getFadedColor(busBlue, 1.05f));
                 drawList->AddPolyline(frontFace, 4, getFadedColor(IM_COL32(255, 255, 255, 80), 1.0f), ImDrawFlags_Closed, 1.0f * z);
 
                 // Top Roof Face
                 ImVec2 topFace[4] = { t0, t1, t2, t3 };
-                drawList->AddConvexPolyFilled(topFace, 4, getFadedColor(baseColor, 1.00f));
+                drawList->AddConvexPolyFilled(topFace, 4, getFadedColor(busWhite, 1.00f));
                 drawList->AddPolyline(topFace, 4, getFadedColor(IM_COL32(255, 255, 255, 120), 1.0f), ImDrawFlags_Closed, 1.5f * z);
 
-                // Bus side passenger windows (5 window panes on each side)
-                for (int iw = 0; iw < 5; iw++) {
-                    float tStart = 0.10f + iw * 0.17f;
-                    float tEnd = tStart + 0.12f;
+                // Bus side passenger windows (Continuous dark strip)
+                // Bus side passenger windows (Continuous dark strip)
+                float tStart = 0.05f;
+                float tEnd = 0.95f;
 
-                    // Left Side Windows
-                    ImVec2 wTL = lerp(t0, t1, tStart);
-                    ImVec2 wTR = lerp(t0, t1, tEnd);
-                    ImVec2 wBL = lerp(p0, p1, tStart);
-                    ImVec2 wBR = lerp(p0, p1, tEnd);
+                // Left Side Windows
+                ImVec2 wTL = lerp(t0, t1, tStart);
+                ImVec2 wTR = lerp(t0, t1, tEnd);
+                ImVec2 wBL = lerp(p0, p1, tStart);
+                ImVec2 wBR = lerp(p0, p1, tEnd);
 
-                    wBL.y -= H * 0.35f * 0.6f;
-                    wBR.y -= H * 0.35f * 0.6f;
-                    wTL.y -= H * 0.10f * 0.6f;
-                    wTR.y -= H * 0.10f * 0.6f;
+                wBL.y -= H * 0.35f * 0.6f;
+                wBR.y -= H * 0.35f * 0.6f;
+                wTL.y -= H * 0.10f * 0.6f;
+                wTR.y -= H * 0.10f * 0.6f;
 
-                    ImVec2 winL[4] = { wBL, wBR, wTR, wTL };
-                    drawList->AddConvexPolyFilled(winL, 4, getFadedColor(IM_COL32(20, 30, 45, 220), 1.0f));
-                    drawList->AddPolyline(winL, 4, getFadedColor(IM_COL32(255, 255, 255, 50), 1.0f), ImDrawFlags_Closed, 0.8f * z);
+                ImVec2 winL[4] = { wBL, wBR, wTR, wTL };
+                drawList->AddConvexPolyFilled(winL, 4, getFadedColor(IM_COL32(20, 30, 45, 240), 1.0f));
 
-                    // Right Side Windows
-                    ImVec2 wTL_R = lerp(t3, t2, tStart);
-                    ImVec2 wTR_R = lerp(t3, t2, tEnd);
-                    ImVec2 wBL_R = lerp(p3, p2, tStart);
-                    ImVec2 wBR_R = lerp(p3, p2, tEnd);
+                // Right Side Windows
+                ImVec2 wTL_R = lerp(t3, t2, tStart);
+                ImVec2 wTR_R = lerp(t3, t2, tEnd);
+                ImVec2 wBL_R = lerp(p3, p2, tStart);
+                ImVec2 wBR_R = lerp(p3, p2, tEnd);
 
-                    wBL_R.y -= H * 0.35f * 0.6f;
-                    wBR_R.y -= H * 0.35f * 0.6f;
-                    wTL_R.y -= H * 0.10f * 0.6f;
-                    wTR_R.y -= H * 0.10f * 0.6f;
+                wBL_R.y -= H * 0.35f * 0.6f;
+                wBR_R.y -= H * 0.35f * 0.6f;
+                wTL_R.y -= H * 0.10f * 0.6f;
+                wTR_R.y -= H * 0.10f * 0.6f;
 
-                    ImVec2 winR[4] = { wBL_R, wBR_R, wTR_R, wTL_R };
-                    drawList->AddConvexPolyFilled(winR, 4, getFadedColor(IM_COL32(20, 30, 45, 220), 1.0f));
-                    drawList->AddPolyline(winR, 4, getFadedColor(IM_COL32(255, 255, 255, 50), 1.0f), ImDrawFlags_Closed, 0.8f * z);
-                }
+                ImVec2 winR[4] = { wBL_R, wBR_R, wTR_R, wTL_R };
+                drawList->AddConvexPolyFilled(winR, 4, getFadedColor(IM_COL32(20, 30, 45, 240), 1.0f));
             }
             else if (vType == 2) {
                 // --- SUV / PICKUP TRUCK SHAPE (Three-box layout: Open Bed, Cabin, Hood) ---
@@ -1461,36 +1457,39 @@ void Renderer::drawVehicles(
             float H_rear = (vType == 1) ? H * 0.25f : ((vType == 2) ? H * 0.45f : H * 0.58f);
 
             // Headlights positions (on front face / front hood corners)
-            ImVec2 headLightLeft = lerp(p1, p2, 0.20f);
-            ImVec2 headLightRight = lerp(p1, p2, 0.80f);
-            headLightLeft.y -= (H_front * 0.6f);
-            headLightRight.y -= (H_front * 0.6f);
+            if (!liveContext.isSunnyMode()) {
+                ImVec2 headLightLeft = lerp(p1, p2, 0.20f);
+                ImVec2 headLightRight = lerp(p1, p2, 0.80f);
+                headLightLeft.y -= (H_front * 0.6f);
+                headLightRight.y -= (H_front * 0.6f);
 
-            drawList->AddCircleFilled(headLightLeft, 2.5f * z, getFadedColor(IM_COL32(255, 245, 160, 255), 1.0f));
-            drawList->AddCircleFilled(headLightRight, 2.5f * z, getFadedColor(IM_COL32(255, 245, 160, 255), 1.0f));
+                // Increased headlight size
+                drawList->AddCircleFilled(headLightLeft, 3.5f * z, getFadedColor(IM_COL32(255, 245, 160, 255), 1.0f));
+                drawList->AddCircleFilled(headLightRight, 3.5f * z, getFadedColor(IM_COL32(255, 245, 160, 255), 1.0f));
 
-            // Headlight glow cones at night (pointing forward)
-            if (camera.getZoom() > 0.3f) {
-                float cdx = p1.x - p0.x;
-                float cdy = p1.y - p0.y;
-                float clen = std::sqrt(cdx * cdx + cdy * cdy);
+                // Increased Headlight glow cones at night/rain (pointing forward)
+                if (camera.getZoom() > 0.3f) {
+                    float cdx = p1.x - p0.x;
+                    float cdy = p1.y - p0.y;
+                    float clen = std::sqrt(cdx * cdx + cdy * cdy);
 
-                if (clen > 0.1f) {
-                    float dirX = cdx / clen;
-                    float dirY = cdy / clen;
-                    float perpX = -dirY;
-                    float perpY = dirX;
+                    if (clen > 0.1f) {
+                        float dirX = cdx / clen;
+                        float dirY = cdy / clen;
+                        float perpX = -dirY;
+                        float perpY = dirX;
 
-                    auto drawGlowCone = [&](ImVec2 origin) {
-                        ImVec2 pA = origin;
-                        ImVec2 pB(origin.x + dirX * 65.0f * z + perpX * 18.0f * z, origin.y + dirY * 65.0f * z + perpY * 18.0f * z);
-                        ImVec2 pC(origin.x + dirX * 65.0f * z - perpX * 18.0f * z, origin.y + dirY * 65.0f * z - perpY * 18.0f * z);
+                        auto drawGlowCone = [&](ImVec2 origin) {
+                            ImVec2 pA = origin;
+                            ImVec2 pB(origin.x + dirX * 100.0f * z + perpX * 30.0f * z, origin.y + dirY * 100.0f * z + perpY * 30.0f * z);
+                            ImVec2 pC(origin.x + dirX * 100.0f * z - perpX * 30.0f * z, origin.y + dirY * 100.0f * z - perpY * 30.0f * z);
 
-                        drawList->AddTriangleFilled(pA, pB, pC, getFadedColor(IM_COL32(255, 250, 180, 25), 1.0f));
-                    };
+                            drawList->AddTriangleFilled(pA, pB, pC, getFadedColor(IM_COL32(255, 250, 180, 45), 1.0f));
+                        };
 
-                    drawGlowCone(headLightLeft);
-                    drawGlowCone(headLightRight);
+                        drawGlowCone(headLightLeft);
+                        drawGlowCone(headLightRight);
+                    }
                 }
             }
 
@@ -1656,10 +1655,31 @@ void Renderer::drawVehicles(
             drawList->AddCircleFilled(wD, wRad * 0.45f, getFadedColor(IM_COL32(160, 160, 160, 255), 1.0f));
 
             // Headlights
-            ImVec2 hL1 = lerp(p1, p2, 0.25f);
-            ImVec2 hL2 = lerp(p1, p2, 0.75f);
-            drawList->AddCircleFilled(hL1, 2.8f * z, getFadedColor(IM_COL32(255, 245, 150, 255), 1.0f));
-            drawList->AddCircleFilled(hL2, 2.8f * z, getFadedColor(IM_COL32(255, 245, 150, 255), 1.0f));
+            if (!liveContext.isSunnyMode()) {
+                ImVec2 hL1 = lerp(p1, p2, 0.25f);
+                ImVec2 hL2 = lerp(p1, p2, 0.75f);
+                drawList->AddCircleFilled(hL1, 4.5f * z, getFadedColor(IM_COL32(255, 245, 150, 255), 1.0f));
+                drawList->AddCircleFilled(hL2, 4.5f * z, getFadedColor(IM_COL32(255, 245, 150, 255), 1.0f));
+                
+                // Top-down glow cone
+                float cdx = p1.x - p0.x;
+                float cdy = p1.y - p0.y;
+                float clen = std::sqrt(cdx * cdx + cdy * cdy);
+                if (clen > 0.1f) {
+                    float dirX = cdx / clen;
+                    float dirY = cdy / clen;
+                    float perpX = -dirY;
+                    float perpY = dirX;
+                    auto drawGlowCone = [&](ImVec2 origin) {
+                        ImVec2 pA = origin;
+                        ImVec2 pB(origin.x + dirX * 100.0f * z + perpX * 30.0f * z, origin.y + dirY * 100.0f * z + perpY * 30.0f * z);
+                        ImVec2 pC(origin.x + dirX * 100.0f * z - perpX * 30.0f * z, origin.y + dirY * 100.0f * z - perpY * 30.0f * z);
+                        drawList->AddTriangleFilled(pA, pB, pC, getFadedColor(IM_COL32(255, 250, 180, 45), 1.0f));
+                    };
+                    drawGlowCone(hL1);
+                    drawGlowCone(hL2);
+                }
+            }
 
             // Rear Lights
             ImVec2 rL1 = lerp(p0, p3, 0.25f);
@@ -1851,19 +1871,52 @@ void Renderer::drawLiveContextOverlay(const LiveContextEngine& liveContext) {
 
 void Renderer::drawRainEffect() {
     ImDrawList* drawList = ImGui::GetBackgroundDrawList();
-
     ImVec2 displaySize = ImGui::GetIO().DisplaySize;
+    float time = static_cast<float>(ImGui::GetTime());
 
-    for (int i = 0; i < 90; i++) {
-        float x = static_cast<float>((i * 97) % static_cast<int>(displaySize.x));
-        float y = static_cast<float>((i * 53) % static_cast<int>(displaySize.y));
+    // Wind shear/slant
+    float slant = 15.0f;
+    float dropSpeed = 800.0f;
 
+    for (int i = 0; i < 250; i++) {
+        // Random deterministic seed
+        float seed = static_cast<float>(i * 3821);
+        
+        // Initial drop position calculation
+        float start_x = fmod(seed, displaySize.x + 200.0f);
+        float y = fmod(seed * 1.3f + time * (dropSpeed + (i % 50) * 10.0f), displaySize.y);
+        
+        // Apply slant to X
+        float x = start_x - (y / displaySize.y) * (slant * 10.0f);
+        
+        // Wrap X just in case it goes off screen left
+        if (x < -20.0f) {
+            x += displaySize.x + 40.0f;
+        }
+
+        // Drop length and color variation
+        float length = 20.0f + (i % 10);
+        int alpha = 100 + (i % 100);
+        
         drawList->AddLine(
             ImVec2(x, y),
-            ImVec2(x - 8.0f, y + 20.0f),
-            IM_COL32(150, 190, 255, 120),
-            1.2f
+            ImVec2(x - slant, y + length),
+            IM_COL32(180, 210, 255, alpha),
+            1.5f
         );
+
+        // Ground splash effect (if it's hitting the bottom third of the screen)
+        if (y > displaySize.y * 0.8f && (i % 3) == 0) {
+            float splashAlphaMod = 1.0f - (y - displaySize.y * 0.8f) / (displaySize.y * 0.2f);
+            int splashAlpha = static_cast<int>(80 * splashAlphaMod);
+            drawList->AddCircle(
+                ImVec2(x - slant, y + length),
+                3.0f + fmod(time * 15.0f + i, 5.0f), // Expanding ripple
+                IM_COL32(200, 230, 255, splashAlpha),
+                0,
+                1.0f
+            );
+        }
     }
 }
 
@@ -2181,30 +2234,39 @@ void Renderer::drawRoadLabels(
     }
 }
 
-void Renderer::drawGround(const LiveContextEngine& liveContext) {
+void Renderer::drawGround(const CityArea& area, bool isometricMode, const Camera2D& camera, const LiveContextEngine& liveContext) {
     ImDrawList* drawList = ImGui::GetBackgroundDrawList();
     ImVec2 displaySize = ImGui::GetIO().DisplaySize;
 
+    // 1. Mainland Fill (Entire Screen)
     ImU32 groundColor;
     if (liveContext.isNightMode()) {
-        groundColor = IM_COL32(14, 18, 26, 255);
+        groundColor = IM_COL32(20, 26, 30, 255);
     } else if (liveContext.isRainMode()) {
         groundColor = IM_COL32(32, 38, 40, 255);
+    } else if (liveContext.isSunnyMode()) {
+        groundColor = IM_COL32(110, 155, 90, 255); // Vibrant bright green/brown
     } else {
         groundColor = IM_COL32(38, 48, 40, 255); // Stylish dark forest green
     }
 
-    // Fill the ground
     drawList->AddRectFilled(ImVec2(0, 0), displaySize, groundColor);
 
-    // Draw subtle grid lines
-    float gridSize = 60.0f;
+    // 2. Grid Lines (Entire Screen)
+    float gridSize = 60.0f * camera.getZoom();
     ImU32 gridColor = liveContext.isNightMode() ? IM_COL32(255, 255, 255, 6) : IM_COL32(255, 255, 255, 12);
-    for (float x = 0; x < displaySize.x; x += gridSize) {
-        drawList->AddLine(ImVec2(x, 0), ImVec2(x, displaySize.y), gridColor, 1.0f);
+
+    float offsetX = fmod(camera.getOffsetX(), gridSize);
+    float offsetY = fmod(camera.getOffsetY(), gridSize);
+    
+    if (offsetX > 0) offsetX -= gridSize;
+    if (offsetY > 0) offsetY -= gridSize;
+
+    for (float x = offsetX; x < displaySize.x; x += gridSize) {
+        drawList->AddLine(ImVec2(x, 0), ImVec2(x, displaySize.y), gridColor);
     }
-    for (float y = 0; y < displaySize.y; y += gridSize) {
-        drawList->AddLine(ImVec2(0, y), ImVec2(displaySize.x, y), gridColor, 1.0f);
+    for (float y = offsetY; y < displaySize.y; y += gridSize) {
+        drawList->AddLine(ImVec2(0, y), ImVec2(displaySize.x, y), gridColor);
     }
 }
 
@@ -2220,19 +2282,62 @@ void Renderer::drawEnvironmentDetails(
         Vec2 p = transformForView(light.position, isometricMode);
         p = applyCamera(p, camera);
 
+        float z = camera.getZoom();
+
         drawList->AddCircleFilled(
             ImVec2(p.x, p.y),
-            22.0f * camera.getZoom(),
+            22.0f * z,
             IM_COL32(60, 60, 65, 130)
         );
 
         drawList->AddCircle(
             ImVec2(p.x, p.y),
-            22.0f * camera.getZoom(),
+            22.0f * z,
             IM_COL32(210, 210, 210, 130),
             24,
-            1.5f * camera.getZoom()
+            1.5f * z
         );
+    }
+
+    // Draw Monumental Statue at the first major intersection
+    if (!area.trafficLights.empty() && camera.getZoom() > 0.3f) {
+        Vec2 monumentPos = area.trafficLights[0].position;
+        Vec2 screen = transformForView(monumentPos, isometricMode);
+        screen = applyCamera(screen, camera);
+        
+        float z = camera.getZoom();
+        
+        // Tier 1 circular base
+        drawList->AddCircleFilled(ImVec2(screen.x, screen.y), 45.0f * z, IM_COL32(130, 135, 140, 255));
+        drawList->AddCircle(ImVec2(screen.x, screen.y), 45.0f * z, IM_COL32(100, 105, 110, 255), 24, 2.0f * z);
+        
+        // Tier 2 circular base
+        ImVec2 t2Pos(screen.x, screen.y - 10.0f * z);
+        drawList->AddCircleFilled(t2Pos, 35.0f * z, IM_COL32(150, 155, 160, 255));
+        drawList->AddCircle(t2Pos, 35.0f * z, IM_COL32(120, 125, 130, 255), 24, 1.5f * z);
+        
+        // Tall square pillar
+        ImVec2 pillarBaseL(screen.x - 12.0f * z, t2Pos.y - 5.0f * z);
+        ImVec2 pillarBaseR(screen.x + 12.0f * z, t2Pos.y - 5.0f * z);
+        ImVec2 pillarTopL(screen.x - 10.0f * z, t2Pos.y - 55.0f * z);
+        ImVec2 pillarTopR(screen.x + 10.0f * z, t2Pos.y - 55.0f * z);
+        
+        ImVec2 pillarFace[4] = { pillarBaseL, pillarBaseR, pillarTopR, pillarTopL };
+        drawList->AddConvexPolyFilled(pillarFace, 4, IM_COL32(170, 175, 180, 255));
+        drawList->AddPolyline(pillarFace, 4, IM_COL32(120, 120, 120, 255), ImDrawFlags_Closed, 1.5f * z);
+        
+        // Statue figure (geometric approximation: body, head, arms)
+        ImVec2 bodyBase(screen.x, t2Pos.y - 55.0f * z);
+        ImVec2 bodyTop(screen.x, t2Pos.y - 85.0f * z);
+        drawList->AddLine(bodyBase, bodyTop, IM_COL32(90, 95, 100, 255), 8.0f * z); // Body
+        
+        ImVec2 head(screen.x, t2Pos.y - 92.0f * z);
+        drawList->AddCircleFilled(head, 5.0f * z, IM_COL32(90, 95, 100, 255)); // Head
+        
+        ImVec2 armL(screen.x - 7.0f * z, t2Pos.y - 75.0f * z);
+        ImVec2 armR(screen.x + 7.0f * z, t2Pos.y - 75.0f * z);
+        drawList->AddLine(ImVec2(screen.x, t2Pos.y - 80.0f * z), armL, IM_COL32(90, 95, 100, 255), 3.0f * z);
+        drawList->AddLine(ImVec2(screen.x, t2Pos.y - 80.0f * z), armR, IM_COL32(90, 95, 100, 255), 3.0f * z);
     }
 }
 
@@ -2242,161 +2347,145 @@ void Renderer::drawTrees(
     const Camera2D& camera
 ) {
     ImDrawList* drawList = ImGui::GetBackgroundDrawList();
+    ImVec2 displaySize = ImGui::GetIO().DisplaySize;
+    float baseZ = camera.getZoom();
+    float z = baseZ * 2.5f; // Scale up all nature elements
 
+    if (area.buildings.empty() && area.roads.empty()) return;
+
+    // Calculate map bounds
+    float minX = 0, maxX = 0, minY = 0, maxY = 0;
+    if (!area.buildings.empty()) {
+        minX = area.buildings[0].base[0].x; maxX = minX;
+        minY = area.buildings[0].base[0].y; maxY = minY;
+    }
+    for (const Building& b : area.buildings) {
+        for (const Vec2& p : b.base) {
+            if (p.x < minX) minX = p.x;
+            if (p.x > maxX) maxX = p.x;
+            if (p.y < minY) minY = p.y;
+            if (p.y > maxY) maxY = p.y;
+        }
+    }
+    for (const Road& r : area.roads) {
+        for (const Vec2& p : r.points) {
+            if (p.x < minX) minX = p.x;
+            if (p.x > maxX) maxX = p.x;
+            if (p.y < minY) minY = p.y;
+            if (p.y > maxY) maxY = p.y;
+        }
+    }
+
+    minX -= 1200.0f; maxX += 1200.0f;
+    minY -= 1200.0f; maxY += 1200.0f;
+
+    auto isPointFree = [&](float x, float y) {
+        for (const Building& b : area.buildings) {
+            for (const Vec2& bp : b.base) {
+                float dx = bp.x - x;
+                float dy = bp.y - y;
+                if (dx * dx + dy * dy < 25000.0f) return false; // ~158 units
+            }
+        }
+        for (const Road& r : area.roads) {
+            for (const Vec2& rp : r.points) {
+                float dx = rp.x - x;
+                float dy = rp.y - y;
+                if (dx * dx + dy * dy < 15000.0f) return false; // ~122 units
+            }
+        }
+        return true;
+    };
+
+    int maxTrees = 1500;
     int treeCount = 0;
-    const int maxTrees = 150; // Increased to accommodate the larger Pettah map
+    float gridStep = 150.0f;
 
-    for (const Road& road : area.roads) {
-        for (size_t i = 0; i + 1 < road.points.size(); i++) {
-            Vec2 p1 = road.points[i];
-            Vec2 p2 = road.points[i + 1];
+    for (float x = minX; x <= maxX; x += gridStep) {
+        for (float y = minY; y <= maxY; y += gridStep) {
+            // Add pseudo-random jitter
+            float px = x + ((int)(x * 13 + y * 37) % 80) - 40.0f;
+            float py = y + ((int)(x * 19 + y * 41) % 80) - 40.0f;
 
-            float dx = p2.x - p1.x;
-            float dy = p2.y - p1.y;
-            float length = std::sqrt(dx * dx + dy * dy);
+            Vec2 worldPos(px, py);
+            Vec2 screen = transformForView(worldPos, isometricMode);
+            screen = applyCamera(screen, camera);
 
-            if (length < 80.0f) {
+            // Frustum cull
+            if (screen.x < -300 || screen.y < -400 || 
+                screen.x > displaySize.x + 300 || screen.y > displaySize.y + 400) {
                 continue;
             }
 
-            float nx = -dy / length;
-            float ny = dx / length;
+            if (isPointFree(px, py)) {
+                int hash = std::abs((int)(px * 97 + py * 113)) % 100;
 
-            int samples = static_cast<int>(length / 130.0f);
-
-            for (int s = 1; s <= samples; s++) {
-                float t = static_cast<float>(s) / static_cast<float>(samples + 1);
-
-                Vec2 basePoint(
-                    p1.x + dx * t,
-                    p1.y + dy * t
-                );
-
-                // Alternate sides of the road.
-                float side = (s % 2 == 0) ? 1.0f : -1.0f;
-
-                Vec2 treeWorld(
-                    basePoint.x + nx * side * 36.0f,
-                    basePoint.y + ny * side * 36.0f
-                );
-
-                Vec2 screen = transformForView(treeWorld, isometricMode);
-                screen = applyCamera(screen, camera);
-
-                float z = camera.getZoom();
-
-                // Tree shadow on ground
-                drawList->AddCircleFilled(
-                    ImVec2(screen.x + 4.0f * z, screen.y + 6.0f * z),
-                    8.0f * z,
-                    IM_COL32(0, 0, 0, 70)
-                );
-
-                // Select tree variety based on position pseudo-random seed
-                int tVariety = (s + treeCount) % 3;
-
-                if (tVariety == 0) {
-                    // Variety 0: Classic Green Oak Tree with Fruit
-                    // Trunk
-                    drawList->AddRectFilled(
-                        ImVec2(screen.x - 2.0f * z, screen.y + 4.0f * z),
-                        ImVec2(screen.x + 2.0f * z, screen.y + 13.0f * z),
-                        IM_COL32(110, 75, 35, 240)
+                if (hash < 30) {
+                    // Grass tufts
+                    ImU32 grassColor = IM_COL32(40, 180, 70, 200);
+                    drawList->AddTriangleFilled(
+                        ImVec2(screen.x, screen.y - 8.0f * z),
+                        ImVec2(screen.x - 4.0f * z, screen.y + 2.0f * z),
+                        ImVec2(screen.x + 4.0f * z, screen.y + 2.0f * z),
+                        grassColor
                     );
-
-                    // Layered leaves
-                    drawList->AddCircleFilled(
+                    drawList->AddTriangleFilled(
+                        ImVec2(screen.x - 3.0f * z, screen.y - 5.0f * z),
+                        ImVec2(screen.x - 6.0f * z, screen.y + 2.0f * z),
                         ImVec2(screen.x, screen.y + 2.0f * z),
-                        10.0f * z,
-                        IM_COL32(20, 110, 50, 240) // Shadow layer
+                        IM_COL32(35, 160, 60, 200)
                     );
-                    drawList->AddCircleFilled(
-                        ImVec2(screen.x, screen.y),
-                        9.0f * z,
-                        IM_COL32(35, 150, 75, 240) // Main canopy
-                    );
-                    drawList->AddCircleFilled(
-                        ImVec2(screen.x - 5.0f * z, screen.y - 3.0f * z),
-                        6.5f * z,
-                        IM_COL32(45, 175, 85, 230) // Left highlight
-                    );
-                    drawList->AddCircleFilled(
-                        ImVec2(screen.x + 5.0f * z, screen.y + 2.0f * z),
-                        6.5f * z,
-                        IM_COL32(25, 125, 60, 230) // Right shade
-                    );
-
-                    // Red apples/blossom dots
-                    drawList->AddCircleFilled(ImVec2(screen.x - 3.0f * z, screen.y + 1.0f * z), 1.2f * z, IM_COL32(235, 60, 60, 240));
-                    drawList->AddCircleFilled(ImVec2(screen.x + 2.0f * z, screen.y - 2.0f * z), 1.2f * z, IM_COL32(235, 60, 60, 240));
-                    drawList->AddCircleFilled(ImVec2(screen.x - 1.0f * z, screen.y - 4.0f * z), 1.2f * z, IM_COL32(235, 60, 60, 240));
-
-                } else if (tVariety == 1) {
-                    // Variety 1: Coniferous Pine Tree (Layered Triangles)
-                    // Trunk
-                    drawList->AddRectFilled(
-                        ImVec2(screen.x - 1.8f * z, screen.y + 4.0f * z),
-                        ImVec2(screen.x + 1.8f * z, screen.y + 14.0f * z),
-                        IM_COL32(90, 60, 30, 240)
-                    );
-
-                    // Pine Leaf Layers (Bottom to Top)
-                    // Bottom triangle
-                    ImVec2 pA_bot(screen.x, screen.y - 6.0f * z);
-                    ImVec2 pB_bot(screen.x - 9.0f * z, screen.y + 5.0f * z);
-                    ImVec2 pC_bot(screen.x + 9.0f * z, screen.y + 5.0f * z);
-                    drawList->AddTriangleFilled(pA_bot, pB_bot, pC_bot, IM_COL32(20, 95, 55, 240));
-
-                    // Middle triangle
-                    ImVec2 pA_mid(screen.x, screen.y - 12.0f * z);
-                    ImVec2 pB_mid(screen.x - 7.5f * z, screen.y - 1.0f * z);
-                    ImVec2 pC_mid(screen.x + 7.5f * z, screen.y - 1.0f * z);
-                    drawList->AddTriangleFilled(pA_mid, pB_mid, pC_mid, IM_COL32(25, 115, 65, 240));
-
-                    // Top triangle
-                    ImVec2 pA_top(screen.x, screen.y - 18.0f * z);
-                    ImVec2 pB_top(screen.x - 5.5f * z, screen.y - 7.0f * z);
-                    ImVec2 pC_top(screen.x + 5.5f * z, screen.y - 7.0f * z);
-                    drawList->AddTriangleFilled(pA_top, pB_top, pC_top, IM_COL32(35, 140, 75, 240));
-
-                } else {
-                    // Variety 2: Cherry Blossom Tree (Pink Canopy with White Accents)
-                    // Trunk
-                    drawList->AddRectFilled(
-                        ImVec2(screen.x - 2.0f * z, screen.y + 4.0f * z),
-                        ImVec2(screen.x + 2.0f * z, screen.y + 13.0f * z),
-                        IM_COL32(110, 80, 50, 240)
-                    );
-
-                    // Pink Canopy Layers
-                    drawList->AddCircleFilled(
+                    drawList->AddTriangleFilled(
+                        ImVec2(screen.x + 3.0f * z, screen.y - 6.0f * z),
                         ImVec2(screen.x, screen.y + 2.0f * z),
-                        10.0f * z,
-                        IM_COL32(200, 70, 110, 240) // Dark pink shade
+                        ImVec2(screen.x + 6.0f * z, screen.y + 2.0f * z),
+                        IM_COL32(45, 190, 80, 200)
                     );
+                } else if (hash < 65) {
+                    // Tree
                     drawList->AddCircleFilled(
-                        ImVec2(screen.x, screen.y),
-                        9.0f * z,
-                        IM_COL32(240, 110, 160, 240) // Main pink
-                    );
-                    drawList->AddCircleFilled(
-                        ImVec2(screen.x - 5.0f * z, screen.y - 3.0f * z),
-                        6.5f * z,
-                        IM_COL32(255, 150, 190, 230) // Light pink highlight
-                    );
-                    drawList->AddCircleFilled(
-                        ImVec2(screen.x + 5.0f * z, screen.y + 2.0f * z),
-                        6.5f * z,
-                        IM_COL32(220, 90, 130, 230) // Medium pink
+                        ImVec2(screen.x + 4.0f * z, screen.y + 6.0f * z),
+                        8.0f * z,
+                        IM_COL32(0, 0, 0, 70)
                     );
 
-                    // White flower accents
-                    drawList->AddCircleFilled(ImVec2(screen.x - 2.0f * z, screen.y - 2.0f * z), 1.2f * z, IM_COL32(255, 255, 255, 240));
-                    drawList->AddCircleFilled(ImVec2(screen.x + 3.0f * z, screen.y + 1.0f * z), 1.2f * z, IM_COL32(255, 255, 255, 240));
-                    drawList->AddCircleFilled(ImVec2(screen.x - 1.0f * z, screen.y + 4.0f * z), 1.2f * z, IM_COL32(255, 255, 255, 240));
+                    int tVariety = hash % 3;
+
+                    if (tVariety == 0) {
+                        drawList->AddRectFilled(ImVec2(screen.x - 2.0f * z, screen.y + 4.0f * z), ImVec2(screen.x + 2.0f * z, screen.y + 13.0f * z), IM_COL32(110, 75, 35, 240));
+                        drawList->AddCircleFilled(ImVec2(screen.x, screen.y + 2.0f * z), 10.0f * z, IM_COL32(20, 110, 50, 240));
+                        drawList->AddCircleFilled(ImVec2(screen.x, screen.y), 9.0f * z, IM_COL32(35, 150, 75, 240));
+                        drawList->AddCircleFilled(ImVec2(screen.x - 5.0f * z, screen.y - 3.0f * z), 6.5f * z, IM_COL32(45, 175, 85, 230));
+                        drawList->AddCircleFilled(ImVec2(screen.x + 5.0f * z, screen.y + 2.0f * z), 6.5f * z, IM_COL32(25, 125, 60, 230));
+                        drawList->AddCircleFilled(ImVec2(screen.x - 3.0f * z, screen.y + 1.0f * z), 1.2f * z, IM_COL32(235, 60, 60, 240));
+                        drawList->AddCircleFilled(ImVec2(screen.x + 2.0f * z, screen.y - 2.0f * z), 1.2f * z, IM_COL32(235, 60, 60, 240));
+                    } else if (tVariety == 1) {
+                        drawList->AddRectFilled(ImVec2(screen.x - 1.8f * z, screen.y + 4.0f * z), ImVec2(screen.x + 1.8f * z, screen.y + 14.0f * z), IM_COL32(90, 60, 30, 240));
+                        drawList->AddTriangleFilled(ImVec2(screen.x, screen.y - 6.0f * z), ImVec2(screen.x - 9.0f * z, screen.y + 5.0f * z), ImVec2(screen.x + 9.0f * z, screen.y + 5.0f * z), IM_COL32(20, 95, 55, 240));
+                        drawList->AddTriangleFilled(ImVec2(screen.x, screen.y - 12.0f * z), ImVec2(screen.x - 7.5f * z, screen.y - 1.0f * z), ImVec2(screen.x + 7.5f * z, screen.y - 1.0f * z), IM_COL32(25, 115, 65, 240));
+                        drawList->AddTriangleFilled(ImVec2(screen.x, screen.y - 18.0f * z), ImVec2(screen.x - 5.5f * z, screen.y - 7.0f * z), ImVec2(screen.x + 5.5f * z, screen.y - 7.0f * z), IM_COL32(35, 140, 75, 240));
+                    } else {
+                        drawList->AddRectFilled(ImVec2(screen.x - 2.0f * z, screen.y + 4.0f * z), ImVec2(screen.x + 2.0f * z, screen.y + 13.0f * z), IM_COL32(110, 80, 50, 240));
+                        drawList->AddCircleFilled(ImVec2(screen.x, screen.y + 2.0f * z), 10.0f * z, IM_COL32(200, 70, 110, 240));
+                        drawList->AddCircleFilled(ImVec2(screen.x, screen.y), 9.0f * z, IM_COL32(240, 110, 160, 240));
+                        drawList->AddCircleFilled(ImVec2(screen.x - 5.0f * z, screen.y - 3.0f * z), 6.5f * z, IM_COL32(255, 150, 190, 230));
+                        drawList->AddCircleFilled(ImVec2(screen.x + 5.0f * z, screen.y + 2.0f * z), 6.5f * z, IM_COL32(220, 90, 130, 230));
+                        drawList->AddCircleFilled(ImVec2(screen.x - 2.0f * z, screen.y - 2.0f * z), 1.2f * z, IM_COL32(255, 255, 255, 240));
+                    }
+                    treeCount++;
+                } else if (hash < 80) {
+                    // Flowers
+                    ImU32 fColor = (hash % 2 == 0) ? IM_COL32(255, 100, 150, 240) : IM_COL32(255, 200, 50, 240);
+                    drawList->AddCircleFilled(ImVec2(screen.x, screen.y), 2.5f * z, fColor);
+                    drawList->AddCircleFilled(ImVec2(screen.x - 2.0f * z, screen.y + 2.0f * z), 2.0f * z, fColor);
+                    drawList->AddCircleFilled(ImVec2(screen.x + 2.0f * z, screen.y + 2.0f * z), 2.0f * z, fColor);
+                    drawList->AddCircleFilled(ImVec2(screen.x, screen.y), 1.0f * z, IM_COL32(255, 255, 255, 240));
+                } else if (hash < 85) {
+                    // Park Bench
+                    drawList->AddRectFilled(ImVec2(screen.x - 5.0f * z, screen.y - 2.0f * z), ImVec2(screen.x + 7.0f * z, screen.y + 4.0f * z), IM_COL32(0, 0, 0, 50));
+                    drawList->AddRectFilled(ImVec2(screen.x - 6.0f * z, screen.y - 3.0f * z), ImVec2(screen.x + 6.0f * z, screen.y + 1.0f * z), IM_COL32(140, 90, 50, 255), 1.0f);
+                    drawList->AddRectFilled(ImVec2(screen.x - 6.0f * z, screen.y - 6.0f * z), ImVec2(screen.x + 6.0f * z, screen.y - 3.0f * z), IM_COL32(120, 70, 40, 255), 1.0f);
                 }
-
-                treeCount++;
 
                 if (treeCount >= maxTrees) {
                     return;
@@ -2556,5 +2645,207 @@ void Renderer::drawPixelBuffer(bool xrayMode) {
             IM_COL32(255, 255, 255, 255),
             "X-Ray Mode: Manual raster pixels + routes + viewing transform visible."
         );
+    }
+}
+
+void Renderer::drawSkyBackground(const LiveContextEngine& liveContext) {
+    ImDrawList* drawList = ImGui::GetBackgroundDrawList();
+    ImVec2 displaySize = ImGui::GetIO().DisplaySize;
+    float time = static_cast<float>(ImGui::GetTime());
+
+    // 1. Celestial Bodies
+    if (liveContext.isSunnyMode()) {
+        // Draw Sun
+        ImVec2 sunPos(displaySize.x * 0.85f, displaySize.y * 0.15f);
+        // Glowing aura
+        for (int i = 5; i > 0; --i) {
+            float radius = 40.0f + i * 15.0f;
+            int alpha = 40 - i * 7;
+            drawList->AddCircleFilled(sunPos, radius, IM_COL32(255, 230, 100, alpha));
+        }
+        // Core
+        drawList->AddCircleFilled(sunPos, 40.0f, IM_COL32(255, 240, 180, 255));
+    } else if (liveContext.isNightMode()) {
+        // Draw Stars
+        for (int i = 0; i < 150; ++i) {
+            // Pseudo-random deterministic placement
+            float x = fmod(static_cast<float>(i * 3821), displaySize.x);
+            float y = fmod(static_cast<float>(i * 7493), displaySize.y * 0.6f); // mostly upper half
+            
+            // Twinkle effect
+            float offset = static_cast<float>(i);
+            float alphaMod = (sin(time * 2.0f + offset) + 1.0f) * 0.5f; // 0 to 1
+            int alpha = static_cast<int>(100 + 155 * alphaMod);
+            
+            drawList->AddCircleFilled(ImVec2(x, y), 1.0f + (i % 3) * 0.5f, IM_COL32(255, 255, 255, alpha));
+        }
+
+        // Draw Moon (Crescent using two circles or just full moon)
+        ImVec2 moonPos(displaySize.x * 0.15f, displaySize.y * 0.2f);
+        // Glow
+        for (int i = 3; i > 0; --i) {
+            drawList->AddCircleFilled(moonPos, 35.0f + i * 10.0f, IM_COL32(200, 220, 255, 20 - i * 5));
+        }
+        drawList->AddCircleFilled(moonPos, 35.0f, IM_COL32(220, 240, 255, 255));
+        
+        // Crater marks for realism
+        drawList->AddCircleFilled(ImVec2(moonPos.x - 10, moonPos.y - 5), 8.0f, IM_COL32(180, 200, 220, 150));
+        drawList->AddCircleFilled(ImVec2(moonPos.x + 12, moonPos.y + 8), 12.0f, IM_COL32(180, 200, 220, 100));
+        drawList->AddCircleFilled(ImVec2(moonPos.x + 5, moonPos.y - 15), 6.0f, IM_COL32(180, 200, 220, 120));
+    }
+
+    // 2. Procedural Clouds (All modes)
+    ImU32 cloudColor;
+    if (liveContext.isNightMode()) {
+        cloudColor = IM_COL32(60, 65, 80, 120);
+    } else if (liveContext.isRainMode()) {
+        cloudColor = IM_COL32(120, 130, 140, 180);
+    } else {
+        cloudColor = IM_COL32(255, 255, 255, 160);
+    }
+
+    int numClouds = 8;
+    for (int c = 0; c < numClouds; ++c) {
+        float speed = 15.0f + (c % 3) * 5.0f;
+        float base_y = 50.0f + (c * 67) % 200;
+        float offset_x = static_cast<float>(c * 345);
+        
+        // Wrap around using fmod
+        float x = fmod(offset_x + time * speed, displaySize.x + 300.0f) - 150.0f;
+        
+        // Cloud composition (metaballs approach)
+        drawList->AddCircleFilled(ImVec2(x, base_y), 40.0f, cloudColor);
+        drawList->AddCircleFilled(ImVec2(x + 35.0f, base_y + 10.0f), 30.0f, cloudColor);
+        drawList->AddCircleFilled(ImVec2(x - 35.0f, base_y + 5.0f), 35.0f, cloudColor);
+        drawList->AddCircleFilled(ImVec2(x + 15.0f, base_y - 20.0f), 35.0f, cloudColor);
+    }
+}
+
+void Renderer::drawForegroundBirds(const Camera2D& camera) {
+    ImDrawList* drawList = ImGui::GetBackgroundDrawList();
+    ImVec2 displaySize = ImGui::GetIO().DisplaySize;
+    float time = static_cast<float>(ImGui::GetTime());
+    float z = camera.getZoom() * 2.8f; // Greatly increased size factor
+    
+    // Draw 8 flocks of birds
+    for (int flock = 0; flock < 8; ++flock) {
+        float speed = 40.0f + flock * 15.0f;
+        float start_y = 50.0f + flock * 80.0f; // Spread out across the sky
+        float base_x = fmod(time * speed + flock * 350.0f, displaySize.x + 400.0f) - 200.0f;
+        
+        int numBirds = 3 + (flock % 4);
+        
+        for (int b = 0; b < numBirds; ++b) {
+            float bx = base_x - b * 18.0f * z;
+            float by = start_y + b * 12.0f * z + sin(time * 1.5f + b) * 18.0f * z; // Flight bobbing
+            
+            // Wing animation
+            float wingOffset = sin(time * 12.0f + b) * 10.0f * z;
+            
+            ImVec2 center(bx, by);
+            ImVec2 leftWing(bx - 12.0f * z, by - wingOffset);
+            ImVec2 rightWing(bx + 12.0f * z, by - wingOffset);
+            
+            // Draw V shape for bird
+            drawList->AddLine(leftWing, center, IM_COL32(30, 30, 35, 230), 2.5f * z);
+            drawList->AddLine(center, rightWing, IM_COL32(30, 30, 35, 230), 2.5f * z);
+        }
+    }
+}
+
+void Renderer::drawPedestriansAndPets(
+    const CityArea& area,
+    bool isometricMode,
+    const Camera2D& camera
+) {
+    ImDrawList* drawList = ImGui::GetBackgroundDrawList();
+    ImVec2 displaySize = ImGui::GetIO().DisplaySize;
+    float time = ImGui::GetTime();
+    float z = camera.getZoom();
+
+    int pedCount = 0;
+    const int maxPeds = 200;
+
+    for (const Road& road : area.roads) {
+        if (road.points.size() < 2) continue;
+
+        for (size_t i = 0; i + 1 < road.points.size(); i++) {
+            Vec2 p1 = road.points[i];
+            Vec2 p2 = road.points[i + 1];
+
+            float dx = p2.x - p1.x;
+            float dy = p2.y - p1.y;
+            float length = std::sqrt(dx * dx + dy * dy);
+
+            if (length < 60.0f) continue;
+
+            float nx = -dy / length;
+            float ny = dx / length;
+
+            // Spawn 2 entities per segment
+            for (int e = 0; e < 2; e++) {
+                // Offset calculation for movement
+                float speed = 20.0f + ((i + e) % 15);
+                float duration = length / speed;
+                float progress = fmod(time + (i * 7.0f + e * 13.0f), duration) / duration;
+                
+                // One moves forward, one moves backward
+                if (e == 1) progress = 1.0f - progress;
+
+                Vec2 basePoint(
+                    p1.x + dx * progress,
+                    p1.y + dy * progress
+                );
+
+                float side = (e == 0) ? 1.0f : -1.0f;
+                float roadWidth = (road.lanes == 1 ? 40.0f : (road.lanes == 2 ? 65.0f : 90.0f));
+                float offsetDist = roadWidth * 0.5f + 8.0f;
+
+                Vec2 entWorld(
+                    basePoint.x + nx * side * offsetDist,
+                    basePoint.y + ny * side * offsetDist
+                );
+
+                Vec2 screen = transformForView(entWorld, isometricMode);
+                screen = applyCamera(screen, camera);
+
+                if (screen.x < -20 || screen.y < -20 || 
+                    screen.x > displaySize.x + 20 || screen.y > displaySize.y + 20) {
+                    continue;
+                }
+
+                int entType = (i + e) % 3; // 0, 1: person, 2: pet
+
+                // Entity shadow
+                drawList->AddCircleFilled(ImVec2(screen.x, screen.y + 2.0f * z), 3.0f * z, IM_COL32(0, 0, 0, 80));
+
+                if (entType < 2) {
+                    // Draw Person
+                    // Legs
+                    float walkBob = sinf(time * speed * 0.5f) * 1.5f * z;
+                    drawList->AddLine(ImVec2(screen.x - 1.5f*z, screen.y - 2.0f*z), ImVec2(screen.x - 1.5f*z - walkBob, screen.y + 1.0f*z), IM_COL32(50, 50, 60, 255), 1.5f*z);
+                    drawList->AddLine(ImVec2(screen.x + 1.5f*z, screen.y - 2.0f*z), ImVec2(screen.x + 1.5f*z + walkBob, screen.y + 1.0f*z), IM_COL32(50, 50, 60, 255), 1.5f*z);
+                    // Body
+                    ImU32 shirtColor = (entType == 0) ? IM_COL32(200, 80, 80, 255) : IM_COL32(80, 120, 200, 255);
+                    drawList->AddRectFilled(ImVec2(screen.x - 2.5f*z, screen.y - 7.0f*z), ImVec2(screen.x + 2.5f*z, screen.y - 2.0f*z), shirtColor, 1.0f*z);
+                    // Head
+                    drawList->AddCircleFilled(ImVec2(screen.x, screen.y - 9.0f*z), 2.0f*z, IM_COL32(240, 200, 160, 255));
+                } else {
+                    // Draw Pet (Dog)
+                    float runBob = abs(sinf(time * speed)) * 2.0f * z;
+                    // Body
+                    drawList->AddRectFilled(ImVec2(screen.x - 3.5f*z, screen.y - 3.0f*z - runBob), ImVec2(screen.x + 3.5f*z, screen.y - 1.0f*z - runBob), IM_COL32(160, 110, 60, 255), 1.0f*z);
+                    // Head
+                    float headDir = (e == 0) ? 4.0f*z : -4.0f*z;
+                    drawList->AddCircleFilled(ImVec2(screen.x + headDir, screen.y - 4.5f*z - runBob), 1.8f*z, IM_COL32(140, 90, 50, 255));
+                    // Legs
+                    drawList->AddLine(ImVec2(screen.x - 2.0f*z, screen.y - 1.0f*z - runBob), ImVec2(screen.x - 2.0f*z, screen.y + 1.0f*z), IM_COL32(140, 90, 50, 255), 1.2f*z);
+                    drawList->AddLine(ImVec2(screen.x + 2.0f*z, screen.y - 1.0f*z - runBob), ImVec2(screen.x + 2.0f*z, screen.y + 1.0f*z), IM_COL32(140, 90, 50, 255), 1.2f*z);
+                }
+
+                pedCount++;
+                if (pedCount >= maxPeds) return;
+            }
+        }
     }
 }

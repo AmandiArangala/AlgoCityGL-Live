@@ -1,7 +1,7 @@
 #pragma once
 
 enum class LiveContextMode {
-    Normal,
+    Sunny,
     Rain,
     Night,
     HeavyTraffic,
@@ -13,6 +13,7 @@ public:
     void setMode(int selectedMode);
     LiveContextMode getMode() const;
 
+    bool isSunnyMode() const;
     bool isRainMode() const;
     bool isNightMode() const;
     bool isHeavyTrafficMode() const;
@@ -21,5 +22,5 @@ public:
     float getVehicleSpeedMultiplier() const;
 
 private:
-    LiveContextMode mode = LiveContextMode::Normal;
+    LiveContextMode mode = LiveContextMode::Sunny;
 };

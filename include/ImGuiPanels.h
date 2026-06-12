@@ -32,7 +32,7 @@ private:
     };
 
     const char* weatherModes[5] = {
-        "Normal",
+        "Sunny",
         "Rain",
         "Night",
         "Heavy Traffic",

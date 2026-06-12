@@ -3,7 +3,7 @@
 void LiveContextEngine::setMode(int selectedMode) {
     switch (selectedMode) {
         case 0:
-            mode = LiveContextMode::Normal;
+            mode = LiveContextMode::Sunny;
             break;
         case 1:
             mode = LiveContextMode::Rain;
@@ -18,13 +18,17 @@ void LiveContextEngine::setMode(int selectedMode) {
             mode = LiveContextMode::Incident;
             break;
         default:
-            mode = LiveContextMode::Normal;
+            mode = LiveContextMode::Sunny;
             break;
     }
 }
 
 LiveContextMode LiveContextEngine::getMode() const {
     return mode;
+}
+
+bool LiveContextEngine::isSunnyMode() const {
+    return mode == LiveContextMode::Sunny;
 }
 
 bool LiveContextEngine::isRainMode() const {
