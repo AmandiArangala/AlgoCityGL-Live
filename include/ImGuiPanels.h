@@ -25,9 +25,10 @@ private:
     int selectedLineAlgorithm = 0;
     int selectedViewMode = 0;
 
-    const char* areas[2] = {
+    const char* areas[3] = {
         "University of Moratuwa",
-        "Borella Junction"
+        "Borella Junction",
+        "Traffic Demo Location"
     };
 
     const char* weatherModes[5] = {

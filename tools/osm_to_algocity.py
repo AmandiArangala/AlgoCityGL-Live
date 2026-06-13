@@ -37,6 +37,18 @@ AREA_CONFIGS = [
         "max_buildings": 250,
         "max_signals": 25,
         "max_crossings": 35
+    },
+    {
+        "area_name": "Traffic Simulation Demo Area",
+        "input_file": Path("../data/osm/borella_raw_osm.geojson"),
+        "output_file": Path("../data/demo_traffic_area.json"),
+        "scale": 150000,
+        "offset_x": 500,
+        "offset_y": 350,
+        "max_roads": 50,
+        "max_buildings": 20,
+        "max_signals": 15,
+        "max_crossings": 20
     }
 ]
 

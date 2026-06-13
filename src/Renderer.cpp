@@ -1077,29 +1077,29 @@ void Renderer::drawVehicles(
         ImVec2 p3 = screenVertices[3]; // rear-right
 
         // Determine vehicle type and dimensional profile
-        int vType = vehicleIndex % 5;
+        int vType = vehicle.getType();
         float hVal = 8.0f; // Default height
         ImU32 baseColor;
 
         switch (vType) {
-            case 0: // Sedan/Standard car (Orange)
+            case Vehicle::CAR: // Sedan/Standard car (Orange)
                 hVal = 9.0f;
                 baseColor = IM_COL32(235, 110, 30, 245);
                 break;
-            case 1: // Bus (Blue)
+            case Vehicle::BUS: // Bus (Blue)
                 hVal = 17.0f; // Tall
                 baseColor = IM_COL32(40, 130, 240, 245);
                 break;
-            case 2: // SUV/Truck (White/Silver)
-                hVal = 13.0f;
+            case Vehicle::TRUCK: // SUV/Truck (White/Silver)
+                hVal = 15.0f;
                 baseColor = IM_COL32(220, 220, 225, 245);
                 break;
-            case 3: // Cab/Taxi (Yellow)
-                hVal = 9.0f;
-                baseColor = IM_COL32(245, 205, 30, 245);
+            case Vehicle::BIKE: // Bike (Yellow/Greenish)
+                hVal = 6.0f; // Low profile
+                baseColor = IM_COL32(40, 230, 70, 245);
                 break;
-            default: // Sports car (Red)
-                hVal = 6.5f; // Low profile
+            default:
+                hVal = 9.0f;
                 baseColor = IM_COL32(230, 40, 70, 245);
                 break;
         }
