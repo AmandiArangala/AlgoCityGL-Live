@@ -15,16 +15,16 @@ AREA_CONFIGS = [
         "max_crossings": 12
     },
     {
-        "area_name": "Pettah / Colombo Fort Real Area",
-        "input_file": Path("../data/osm/pettah_raw_osm.geojson"),
-        "output_file": Path("../data/pettah_area_real.json"),
-        "scale": 120000,
-        "offset_x": 500,
-        "offset_y": 350,
-        "max_roads": 350,
-        "max_buildings": 250,
-        "max_signals": 25,
-        "max_crossings": 35
+        "area_name": "Pettah Colombo Fort Real GeoJSON Area",
+        "input_file": Path("../data/osm/pettah_raw_osm.json"),
+        "output_file": Path("../data/pettah_area.json"),
+        "scale": 52000,
+        "offset_x": 650,
+        "offset_y": 420,
+        "max_roads": 1500,
+        "max_buildings": 1500,
+        "max_signals": 150,
+        "max_crossings": 250
     },
     {
         "area_name": "Borella Junction Real Area",
@@ -196,15 +196,24 @@ def convert_roads(features, center_lat, center_lon):
     index = 1
 
     allowed_highways = {
+        "motorway",
+        "motorway_link",
+        "trunk",
+        "trunk_link",
         "primary",
+        "primary_link",
         "secondary",
+        "secondary_link",
         "tertiary",
+        "tertiary_link",
         "residential",
         "service",
         "unclassified",
         "living_street",
         "road",
-        "pedestrian"
+        "pedestrian",
+        "busway",
+        "footway"
     }
 
     for feature in features:

@@ -25,9 +25,8 @@ private:
     int selectedLineAlgorithm = 0;
     int selectedViewMode = 0;
 
-    const char* areas[3] = {
+    const char* areas[2] = {
         "University of Moratuwa",
-        "Pettah / Colombo Fort",
         "Borella Junction"
     };
 

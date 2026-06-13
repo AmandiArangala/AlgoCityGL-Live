@@ -2797,17 +2797,27 @@ void Renderer::drawPedestriansAndPets(
                     p1.y + dy * progress
                 );
 
-                float side = (e == 0) ? 1.0f : -1.0f;
-                float roadWidth = (road.lanes == 1 ? 40.0f : (road.lanes == 2 ? 65.0f : 90.0f));
-                float offsetDist = roadWidth * 0.5f + 8.0f;
-
-                Vec2 entWorld(
-                    basePoint.x + nx * side * offsetDist,
-                    basePoint.y + ny * side * offsetDist
-                );
-
-                Vec2 screen = transformForView(entWorld, isometricMode);
+                Vec2 screen = transformForView(basePoint, isometricMode);
                 screen = applyCamera(screen, camera);
+
+                Vec2 screenP1 = applyCamera(transformForView(p1, isometricMode), camera);
+                Vec2 screenP2 = applyCamera(transformForView(p2, isometricMode), camera);
+                
+                float dx_scr = screenP2.x - screenP1.x;
+                float dy_scr = screenP2.y - screenP1.y;
+                float len_scr = std::sqrt(dx_scr * dx_scr + dy_scr * dy_scr);
+                
+                if (len_scr > 0.01f) {
+                    float nx_scr = -dy_scr / len_scr;
+                    float ny_scr = dx_scr / len_scr;
+
+                    float side = (e == 0) ? 1.0f : -1.0f;
+                    float roadWidth = (road.lanes == 1 ? 40.0f : (road.lanes == 2 ? 65.0f : 90.0f)) * z;
+                    float offsetDist = roadWidth * 0.5f + 4.5f * z; // Middle of the sidewalk
+
+                    screen.x += nx_scr * side * offsetDist;
+                    screen.y += ny_scr * side * offsetDist;
+                }
 
                 if (screen.x < -20 || screen.y < -20 || 
                     screen.x > displaySize.x + 20 || screen.y > displaySize.y + 20) {
@@ -2816,31 +2826,33 @@ void Renderer::drawPedestriansAndPets(
 
                 int entType = (i + e) % 3; // 0, 1: person, 2: pet
 
+                float s = z * 1.6f; // Increase size a little bit
+
                 // Entity shadow
-                drawList->AddCircleFilled(ImVec2(screen.x, screen.y + 2.0f * z), 3.0f * z, IM_COL32(0, 0, 0, 80));
+                drawList->AddCircleFilled(ImVec2(screen.x, screen.y + 2.0f * s), 3.0f * s, IM_COL32(0, 0, 0, 80));
 
                 if (entType < 2) {
                     // Draw Person
                     // Legs
-                    float walkBob = sinf(time * speed * 0.5f) * 1.5f * z;
-                    drawList->AddLine(ImVec2(screen.x - 1.5f*z, screen.y - 2.0f*z), ImVec2(screen.x - 1.5f*z - walkBob, screen.y + 1.0f*z), IM_COL32(50, 50, 60, 255), 1.5f*z);
-                    drawList->AddLine(ImVec2(screen.x + 1.5f*z, screen.y - 2.0f*z), ImVec2(screen.x + 1.5f*z + walkBob, screen.y + 1.0f*z), IM_COL32(50, 50, 60, 255), 1.5f*z);
+                    float walkBob = sinf(time * speed * 0.5f) * 1.5f * s;
+                    drawList->AddLine(ImVec2(screen.x - 1.5f*s, screen.y - 2.0f*s), ImVec2(screen.x - 1.5f*s - walkBob, screen.y + 1.0f*s), IM_COL32(50, 50, 60, 255), 1.5f*s);
+                    drawList->AddLine(ImVec2(screen.x + 1.5f*s, screen.y - 2.0f*s), ImVec2(screen.x + 1.5f*s + walkBob, screen.y + 1.0f*s), IM_COL32(50, 50, 60, 255), 1.5f*s);
                     // Body
                     ImU32 shirtColor = (entType == 0) ? IM_COL32(200, 80, 80, 255) : IM_COL32(80, 120, 200, 255);
-                    drawList->AddRectFilled(ImVec2(screen.x - 2.5f*z, screen.y - 7.0f*z), ImVec2(screen.x + 2.5f*z, screen.y - 2.0f*z), shirtColor, 1.0f*z);
+                    drawList->AddRectFilled(ImVec2(screen.x - 2.5f*s, screen.y - 7.0f*s), ImVec2(screen.x + 2.5f*s, screen.y - 2.0f*s), shirtColor, 1.0f*s);
                     // Head
-                    drawList->AddCircleFilled(ImVec2(screen.x, screen.y - 9.0f*z), 2.0f*z, IM_COL32(240, 200, 160, 255));
+                    drawList->AddCircleFilled(ImVec2(screen.x, screen.y - 9.0f*s), 2.0f*s, IM_COL32(240, 200, 160, 255));
                 } else {
                     // Draw Pet (Dog)
-                    float runBob = abs(sinf(time * speed)) * 2.0f * z;
+                    float runBob = abs(sinf(time * speed)) * 2.0f * s;
                     // Body
-                    drawList->AddRectFilled(ImVec2(screen.x - 3.5f*z, screen.y - 3.0f*z - runBob), ImVec2(screen.x + 3.5f*z, screen.y - 1.0f*z - runBob), IM_COL32(160, 110, 60, 255), 1.0f*z);
+                    drawList->AddRectFilled(ImVec2(screen.x - 3.5f*s, screen.y - 3.0f*s - runBob), ImVec2(screen.x + 3.5f*s, screen.y - 1.0f*s - runBob), IM_COL32(160, 110, 60, 255), 1.0f*s);
                     // Head
-                    float headDir = (e == 0) ? 4.0f*z : -4.0f*z;
-                    drawList->AddCircleFilled(ImVec2(screen.x + headDir, screen.y - 4.5f*z - runBob), 1.8f*z, IM_COL32(140, 90, 50, 255));
+                    float headDir = (e == 0) ? 4.0f*s : -4.0f*s;
+                    drawList->AddCircleFilled(ImVec2(screen.x + headDir, screen.y - 4.5f*s - runBob), 1.8f*s, IM_COL32(140, 90, 50, 255));
                     // Legs
-                    drawList->AddLine(ImVec2(screen.x - 2.0f*z, screen.y - 1.0f*z - runBob), ImVec2(screen.x - 2.0f*z, screen.y + 1.0f*z), IM_COL32(140, 90, 50, 255), 1.2f*z);
-                    drawList->AddLine(ImVec2(screen.x + 2.0f*z, screen.y - 1.0f*z - runBob), ImVec2(screen.x + 2.0f*z, screen.y + 1.0f*z), IM_COL32(140, 90, 50, 255), 1.2f*z);
+                    drawList->AddLine(ImVec2(screen.x - 2.0f*s, screen.y - 1.0f*s - runBob), ImVec2(screen.x - 2.0f*s, screen.y + 1.0f*s), IM_COL32(140, 90, 50, 255), 1.2f*s);
+                    drawList->AddLine(ImVec2(screen.x + 2.0f*s, screen.y - 1.0f*s - runBob), ImVec2(screen.x + 2.0f*s, screen.y + 1.0f*s), IM_COL32(140, 90, 50, 255), 1.2f*s);
                 }
 
                 pedCount++;

@@ -65,29 +65,36 @@ void Vehicle::update(float deltaTime, const std::vector<RuntimeTrafficLight>& tr
 
     stoppedAtRedLight = false;
 
-    Vec2 target = route[currentTargetIndex];
-    Vec2 direction(target.x - position.x, target.y - position.y);
+    float moveDist = speed * deltaTime;
 
-    float dist = distance(position, target);
-
-    if (dist < 5.0f) {
-        currentTargetIndex++;
-
+    while (moveDist > 0.0f) {
         if (currentTargetIndex >= static_cast<int>(route.size())) {
             currentTargetIndex = 1;
             position = route[0];
             opacity = 1.0f;
+            break;
         }
 
-        return;
+        Vec2 target = route[currentTargetIndex];
+        float dist = distance(position, target);
+
+        if (dist > 0.001f) {
+            Vec2 direction(target.x - position.x, target.y - position.y);
+            angleDegrees = std::atan2(direction.y, direction.x) * 180.0f / 3.14159265f;
+        }
+
+        if (moveDist >= dist) {
+            position = target;
+            moveDist -= dist;
+            currentTargetIndex++;
+        } else {
+            Vec2 direction(target.x - position.x, target.y - position.y);
+            Vec2 dir = normalize(direction);
+            position.x += dir.x * moveDist;
+            position.y += dir.y * moveDist;
+            moveDist = 0.0f;
+        }
     }
-
-    Vec2 dir = normalize(direction);
-
-    position.x += dir.x * speed * deltaTime;
-    position.y += dir.y * speed * deltaTime;
-
-    angleDegrees = std::atan2(dir.y, dir.x) * 180.0f / 3.14159265f;
 
     opacity = 1.0f;
 
