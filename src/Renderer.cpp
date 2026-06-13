@@ -135,7 +135,7 @@ void Renderer::drawRoads(
 
         StagedRoad staged;
         staged.lanes = road.lanes;
-        staged.roadWidth = (road.lanes == 1 ? 40.0f : (road.lanes == 2 ? 65.0f : 90.0f)) * z; // Wider roads
+        staged.roadWidth = (road.lanes == 1 ? 40.0f : (road.lanes == 2 ? 65.0f : (road.lanes == 6 ? 115.0f : 90.0f))) * z; // Wider roads
         staged.sidewalkWidth = staged.roadWidth + 18.0f * z;
         staged.curbWidth = staged.roadWidth + 4.0f * z;
 
@@ -234,10 +234,23 @@ void Renderer::drawRoadMarkings(
         }
     };
 
+    auto drawSolidLine = [&](float sideOffset) {
+        ImVec2 pt1(a.x + nx * sideOffset, a.y + ny * sideOffset);
+        ImVec2 pt2(b.x + nx * sideOffset, b.y + ny * sideOffset);
+        drawList->AddLine(pt1, pt2, IM_COL32(255, 255, 255, 255), 3.0f * z);
+    };
+
     if (lanes == 1) {
         drawDashedLine(0.0f);
     } else if (lanes == 2) {
         drawDashedLine(0.0f);
+    } else if (lanes == 6) {
+        // 3 lanes each direction with a solid center divider
+        drawSolidLine(0.0f);
+        drawDashedLine(roadWidth * (1.0f / 6.0f));
+        drawDashedLine(roadWidth * (2.0f / 6.0f));
+        drawDashedLine(-roadWidth * (1.0f / 6.0f));
+        drawDashedLine(-roadWidth * (2.0f / 6.0f));
     } else {
         // 3+ lanes: center dashed and side dashed
         drawDashedLine(0.0f);
@@ -2442,7 +2455,7 @@ void Renderer::drawTrees(
         }
         for (const Road& r : area.roads) {
             if (r.points.empty()) continue;
-            float minD = (r.lanes == 1 ? 40.0f : (r.lanes == 2 ? 65.0f : 90.0f)) * 0.5f + 18.0f; 
+            float minD = (r.lanes == 1 ? 40.0f : (r.lanes == 2 ? 65.0f : (r.lanes == 6 ? 115.0f : 90.0f))) * 0.5f + 18.0f;
             float minD2 = minD * minD + 1000.0f; // Add some margin
             for (size_t i = 0; i + 1 < r.points.size(); ++i) {
                 if (pointLineDistanceSq(px, py, r.points[i].x, r.points[i].y, r.points[i+1].x, r.points[i+1].y) < minD2) return false;
@@ -2852,7 +2865,7 @@ void Renderer::drawPedestriansAndPets(
                 );
 
                 float side = (e == 0) ? 1.0f : -1.0f;
-                float roadWidthWorld = (road.lanes == 1 ? 40.0f : (road.lanes == 2 ? 65.0f : 90.0f));
+                float roadWidthWorld = (road.lanes == 1 ? 40.0f : (road.lanes == 2 ? 65.0f : (road.lanes == 6 ? 115.0f : 90.0f)));
                 float offsetDistWorld = roadWidthWorld * 0.5f + 9.0f;
 
                 basePoint.x += nx * side * offsetDistWorld;

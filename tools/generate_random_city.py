@@ -1,4 +1,5 @@
 import json
+import math
 import random
 from pathlib import Path
 
@@ -9,6 +10,63 @@ ROAD_NAMES = [
     "Valley Road", "Spring Street", "Autumn Lane", "Winter Boulevard", "Summer Avenue"
 ]
 
+LANES_PER_DIRECTION = 3
+TOTAL_LANES = LANES_PER_DIRECTION * 2
+LANE_WIDTH_JSON = 6.5
+
+
+def offset_route(points, offset):
+    if len(points) < 2 or abs(offset) < 0.001:
+        return [list(p) for p in points]
+
+    result = []
+    for i in range(len(points)):
+        if i == 0:
+            dx = points[1][0] - points[0][0]
+            dy = points[1][1] - points[0][1]
+        elif i == len(points) - 1:
+            dx = points[i][0] - points[i - 1][0]
+            dy = points[i][1] - points[i - 1][1]
+        else:
+            dx = points[i + 1][0] - points[i - 1][0]
+            dy = points[i + 1][1] - points[i - 1][1]
+
+        length = math.hypot(dx, dy)
+        if length < 0.001:
+            result.append(list(points[i]))
+            continue
+
+        nx = -dy / length
+        ny = dx / length
+        result.append([
+            points[i][0] + nx * offset,
+            points[i][1] + ny * offset,
+        ])
+
+    return result
+
+
+def generate_lane_routes(points, route_index):
+    routes = []
+
+    for lane_idx in range(LANES_PER_DIRECTION):
+        lane_center = (lane_idx + 0.5) * LANE_WIDTH_JSON
+
+        routes.append({
+            "id": f"route_{route_index}",
+            "points": offset_route(points, lane_center),
+        })
+        route_index += 1
+
+        routes.append({
+            "id": f"route_{route_index}",
+            "points": offset_route(list(reversed(points)), lane_center),
+        })
+        route_index += 1
+
+    return routes, route_index
+
+
 BUILDING_NAMES = [
     "Skyline Tower", "Central Plaza", "Grand Hotel", "City Hall", "Tech Hub", 
     "Financial Center", "Emerald Building", "Diamond Tower", "Ruby Heights", "Sapphire Place", 
@@ -17,7 +75,10 @@ BUILDING_NAMES = [
     "Central Library", "City Hospital", "University Main Building", "Stadium", "Arena"
 ]
 
-def generate_grid_city():
+def generate_grid_city(seed=None):
+    if seed is not None:
+        random.seed(seed)
+
     roads = []
     routes = []
     traffic_lights = []
@@ -40,13 +101,11 @@ def generate_grid_city():
         roads.append({
             "id": f"road_{road_index}",
             "name": random.choice(ROAD_NAMES),
-            "lanes": 2,
+            "lanes": TOTAL_LANES,
             "points": points
         })
-        routes.append({"id": f"route_{route_index}", "points": points})
-        route_index += 1
-        routes.append({"id": f"route_{route_index}", "points": list(reversed(points))})
-        route_index += 1
+        road_routes, route_index = generate_lane_routes(points, route_index)
+        routes.extend(road_routes)
         road_index += 1
 
     # Generate vertical roads
@@ -55,13 +114,11 @@ def generate_grid_city():
         roads.append({
             "id": f"road_{road_index}",
             "name": random.choice(ROAD_NAMES),
-            "lanes": 2,
+            "lanes": TOTAL_LANES,
             "points": points
         })
-        routes.append({"id": f"route_{route_index}", "points": points})
-        route_index += 1
-        routes.append({"id": f"route_{route_index}", "points": list(reversed(points))})
-        route_index += 1
+        road_routes, route_index = generate_lane_routes(points, route_index)
+        routes.extend(road_routes)
         road_index += 1
 
     # Intersections
@@ -126,7 +183,7 @@ def generate_grid_city():
                         })
                         building_index += 1
 
-    output = {
+    return {
         "name": "Traffic Simulation Demo Area",
         "latitude": 6.9,
         "longitude": 79.8,
@@ -138,11 +195,19 @@ def generate_grid_city():
         "routes": routes
     }
 
-    output_path = Path("../data/random_city_area.json")
-    with open(output_path, "w") as f:
-        json.dump(output, f, indent=2)
 
-    print(f"Generated {output_path} with completely connected grid network.")
+def write_area(path, area):
+    output_path = Path(path)
+    with output_path.open("w", encoding="utf-8") as f:
+        json.dump(area, f, indent=2)
+    print(
+        f"Generated {output_path} "
+        f"({len(area['roads'])} roads, {len(area['routes'])} lane routes, "
+        f"{LANES_PER_DIRECTION}x2 lanes per road)"
+    )
+
 
 if __name__ == "__main__":
-    generate_grid_city()
+    data_dir = Path(__file__).resolve().parent.parent / "data"
+    write_area(data_dir / "demo_traffic_area.json", generate_grid_city(seed=42))
+    write_area(data_dir / "random_city_area.json", generate_grid_city(seed=1337))
