@@ -190,6 +190,7 @@ std::string Application::getAreaFilePath(int selectedArea) const {
     switch (selectedArea) {
         case 0:  return "../data/moratuwa_area_real.json";
         case 1:  return "../data/borella_area_real.json";
+        case 2:  return "../data/demo_traffic_area.json";
         default: return "../data/moratuwa_area_real.json";
     }
 }

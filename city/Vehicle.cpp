@@ -1,5 +1,6 @@
 #include "Vehicle.h"
 #include <cmath>
+#include <cstdlib>
 
 Vehicle::Vehicle()
     : position(0.0f, 0.0f),
@@ -9,10 +10,33 @@ Vehicle::Vehicle()
       routeReady(false),
       stoppedAtRedLight(false) {
 
-    localVertices.push_back(Vec2(-18.0f, -10.0f));
-    localVertices.push_back(Vec2(18.0f, -10.0f));
-    localVertices.push_back(Vec2(18.0f, 10.0f));
-    localVertices.push_back(Vec2(-18.0f, 10.0f));
+    type = static_cast<Type>(std::rand() % 4);
+
+    if (type == CAR) {
+        localVertices.push_back(Vec2(-18.0f, -10.0f));
+        localVertices.push_back(Vec2(18.0f, -10.0f));
+        localVertices.push_back(Vec2(18.0f, 10.0f));
+        localVertices.push_back(Vec2(-18.0f, 10.0f));
+        speed = 80.0f + (std::rand() % 20);
+    } else if (type == BUS) {
+        localVertices.push_back(Vec2(-28.0f, -11.0f));
+        localVertices.push_back(Vec2(28.0f, -11.0f));
+        localVertices.push_back(Vec2(28.0f, 11.0f));
+        localVertices.push_back(Vec2(-28.0f, 11.0f));
+        speed = 50.0f + (std::rand() % 15);
+    } else if (type == TRUCK) {
+        localVertices.push_back(Vec2(-24.0f, -12.0f));
+        localVertices.push_back(Vec2(24.0f, -12.0f));
+        localVertices.push_back(Vec2(24.0f, 12.0f));
+        localVertices.push_back(Vec2(-24.0f, 12.0f));
+        speed = 55.0f + (std::rand() % 15);
+    } else if (type == BIKE) {
+        localVertices.push_back(Vec2(-8.0f, -4.0f));
+        localVertices.push_back(Vec2(8.0f, -4.0f));
+        localVertices.push_back(Vec2(8.0f, 4.0f));
+        localVertices.push_back(Vec2(-8.0f, 4.0f));
+        speed = 70.0f + (std::rand() % 20);
+    }
 
     updateTransform();
 }
@@ -137,13 +161,15 @@ float Vehicle::distance(const Vec2& a, const Vec2& b) const {
 }
 
 Vec2 Vehicle::normalize(const Vec2& v) const {
-    float length = std::sqrt(v.x * v.x + v.y * v.y);
-
-    if (length == 0.0f) {
-        return Vec2(0.0f, 0.0f);
+    float len = std::sqrt(v.x * v.x + v.y * v.y);
+    if (len > 0.0f) {
+        return Vec2(v.x / len, v.y / len);
     }
+    return Vec2(0.0f, 0.0f);
+}
 
-    return Vec2(v.x / length, v.y / length);
+Vehicle::Type Vehicle::getType() const {
+    return type;
 }
 
 const std::vector<Vec2>& Vehicle::getTransformedVertices() const {

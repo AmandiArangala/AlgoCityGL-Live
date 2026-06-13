@@ -7,6 +7,8 @@
 
 class Vehicle {
 public:
+    enum Type { CAR, BUS, TRUCK, BIKE };
+
     Vehicle();
 
     void setRoute(const std::vector<Vec2>& routePoints);
@@ -23,11 +25,14 @@ public:
     int getRouteSize() const;
     float getOpacity() const;
     Matrix3x3 getTransformMatrix() const;
+    Type getType() const;
 
 private:
     std::vector<Vec2> route;
     std::vector<Vec2> localVertices;
     std::vector<Vec2> transformedVertices;
+
+    Type type;
 
     Vec2 position;
     float angleDegrees;

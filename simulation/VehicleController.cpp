@@ -24,11 +24,23 @@ void VehicleController::initializeFromArea(const CityArea& area) {
                   << " points" << std::endl;
 
         if (route.points.size() >= 2) {
-            Vehicle vehicle;
-            vehicle.setRoute(route.points);
-            vehicles.push_back(vehicle);
+            int numVehicles = route.points.size() / 5;
+            if (numVehicles < 1) numVehicles = 1;
 
-            std::cout << "Vehicle added for route: " << route.id << std::endl;
+            for (int v = 0; v < numVehicles; v++) {
+                Vehicle vehicle;
+                vehicle.setRoute(route.points);
+                
+                std::vector<RuntimeTrafficLight> dummyLights;
+                float advanceTime = v * 8.0f; // Space them by 8 seconds of driving
+                for (float t = 0; t < advanceTime; t += 0.1f) {
+                    vehicle.update(0.1f, dummyLights);
+                }
+
+                vehicles.push_back(vehicle);
+            }
+
+            std::cout << numVehicles << " vehicles added for route: " << route.id << std::endl;
         }
     }
 
