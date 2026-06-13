@@ -126,13 +126,27 @@ void Vehicle::update(float deltaTime, const std::vector<RuntimeTrafficLight>& tr
 }
 
 bool Vehicle::shouldStopForRedLight(const std::vector<RuntimeTrafficLight>& trafficLights) const {
+    if (route.empty() || currentTargetIndex >= route.size()) {
+        return false;
+    }
+
+    Vec2 direction(route[currentTargetIndex].x - position.x, route[currentTargetIndex].y - position.y);
+    Vec2 forward = normalize(direction);
+
     for (const RuntimeTrafficLight& light : trafficLights) {
         float d = distance(position, light.baseLight.position);
 
         bool nearLight = d < 45.0f;
 
         if (nearLight && light.state == SignalState::Red) {
-            return true;
+            Vec2 toLight(light.baseLight.position.x - position.x, light.baseLight.position.y - position.y);
+            Vec2 toLightDir = normalize(toLight);
+            
+            float dotProduct = forward.x * toLightDir.x + forward.y * toLightDir.y;
+            
+            if (dotProduct > 0.5f) {
+                return true;
+            }
         }
     }
 

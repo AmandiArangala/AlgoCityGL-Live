@@ -41,15 +41,31 @@ void Renderer::renderCityArea(
     // 1. Draw background ground terrain and grid
     drawGround(area, isometricMode, camera, liveContext);
 
-    // 2. Draw roads and buildings
+    // 2. Draw roads and ground-level elements
     drawRoads(area, isometricMode, camera);
+    drawEnvironmentDetails(area, isometricMode, camera);
+    drawStopLines(trafficLights, isometricMode, camera);
+    drawPedestrianCrossings(area, isometricMode, camera);
+    
+    // Draw nature and entities BEFORE buildings so they are occluded properly
+    drawTrees(area, isometricMode, camera);
+    drawPedestriansAndPets(area, isometricMode, camera);
+    drawRuntimeTrafficLights(trafficLights, isometricMode, camera);
+    drawVehicles(vehicles, isometricMode, camera, liveContext);
+
+    // 3. Draw Buildings (tall structures that must occlude things behind them)
     if (isometricMode) {
         drawBuildingFills2_5D(area, liveContext, camera);
     } else {
         drawTopDownBuildingFills(area, liveContext, camera);
     }
+    drawBuildingWindows(area, isometricMode, camera);
 
-    // 3. Draw weather/night tint overlay (so it dims the terrain and structures)
+    // 4. Raster pixel scene
+    buildCityPixelScene(area, selectedLineAlgorithm, xrayMode, isometricMode, camera);
+    drawPixelBuffer(xrayMode);
+
+    // 5. Draw weather/night tint overlay over the whole scene
     drawLiveContextOverlay(liveContext);
 
     if (liveContext.isNightMode()) {
@@ -60,27 +76,14 @@ void Renderer::renderCityArea(
         drawIncidentMarker(isometricMode, camera);
     }
 
-    buildCityPixelScene(area, selectedLineAlgorithm, xrayMode, isometricMode, camera);
-    drawPixelBuffer(xrayMode);
-
-    drawEnvironmentDetails(area, isometricMode, camera);
-    drawTrees(area, isometricMode, camera);
-    drawBuildingWindows(area, isometricMode, camera);
-    drawStopLines(trafficLights, isometricMode, camera);
-    drawPedestrianCrossings(area, isometricMode, camera);
-
-    drawRuntimeTrafficLights(trafficLights, isometricMode, camera);
-    drawVehicles(vehicles, isometricMode, camera, liveContext);
-    drawMiniMap(area, vehicles, camera);
-
-    drawRoadLabels(area, isometricMode, camera);
-    drawBuildingLabels(area, isometricMode, camera);
-
-    drawPedestriansAndPets(area, isometricMode, camera);
-
     if (liveContext.isRainMode()) {
         drawRainEffect();
     }
+
+    // 6. Draw UI elements and Labels on top of everything
+    drawMiniMap(area, vehicles, camera);
+    drawRoadLabels(area, isometricMode, camera);
+    drawBuildingLabels(area, isometricMode, camera);
 
     if (xrayMode) {
         drawXRayDashboard(
@@ -551,9 +554,21 @@ void Renderer::drawBuildingFills2_5D(
             return IM_COL32(r, g, b, a);
         };
 
+        // Determine winding of the base polygon in screen space
+        float baseArea = 0.0f;
+        for (size_t i = 0; i < base.size(); i++) {
+            size_t next = (i + 1) % base.size();
+            baseArea += (base[next].x - base[i].x) * (base[next].y + base[i].y);
+        }
+        bool isClockwise = (baseArea < 0.0f);
+
         // 2. Draw Side Faces (Walls) with Perspective Shading & Textures
         for (size_t i = 0; i < base.size(); i++) {
             size_t next = (i + 1) % base.size();
+
+            float dx = base[next].x - base[i].x;
+            bool isFrontFace = isClockwise ? (dx <= 0.0f) : (dx >= 0.0f);
+            if (!isFrontFace) continue;
 
             ImVec2 sideFace[4] = {
                 base[i],
@@ -2126,8 +2141,24 @@ void Renderer::drawBuildingLabels(
 
         Vec2 pos = getPolygonCenter(building.base, isometricMode, camera);
 
-        // Move label slightly above the building.
-        pos.y -= (18.0f * camera.getZoom());
+        // Move label to the top of the roof if in isometric mode
+        if (isometricMode) {
+            pos.y -= (building.height * 0.6f * camera.getZoom());
+        }
+
+        float poleHeight = 25.0f * camera.getZoom();
+
+        // Draw a pole from the roof to the board
+        if (isometricMode) {
+            drawList->AddLine(
+                ImVec2(pos.x, pos.y),
+                ImVec2(pos.x, pos.y - poleHeight),
+                IM_COL32(180, 180, 180, 220),
+                3.0f * camera.getZoom()
+            );
+        }
+
+        pos.y -= poleHeight;
 
         const char* text = building.name.c_str();
 
@@ -2379,19 +2410,42 @@ void Renderer::drawTrees(
     minX -= 1200.0f; maxX += 1200.0f;
     minY -= 1200.0f; maxY += 1200.0f;
 
-    auto isPointFree = [&](float x, float y) {
+    auto isPointFree = [&](float px, float py) {
+        auto pointLineDistanceSq = [](float x, float y, float x1, float y1, float x2, float y2) {
+            float dx = x2 - x1;
+            float dy = y2 - y1;
+            float l2 = dx * dx + dy * dy;
+            if (l2 == 0) return (x - x1)*(x - x1) + (y - y1)*(y - y1);
+            float t = std::max(0.0f, std::min(1.0f, ((x - x1) * dx + (y - y1) * dy) / l2));
+            float projX = x1 + t * dx;
+            float projY = y1 + t * dy;
+            return (x - projX)*(x - projX) + (y - projY)*(y - projY);
+        };
         for (const Building& b : area.buildings) {
-            for (const Vec2& bp : b.base) {
-                float dx = bp.x - x;
-                float dy = bp.y - y;
-                if (dx * dx + dy * dy < 7000.0f) return false; // ~83 units
+            if (b.base.empty()) continue;
+
+            // 1. Point-in-polygon check (Ray-casting) to reject points deep inside the building
+            bool inside = false;
+            for (size_t i = 0, j = b.base.size() - 1; i < b.base.size(); j = i++) {
+                if (((b.base[i].y > py) != (b.base[j].y > py)) &&
+                    (px < (b.base[j].x - b.base[i].x) * (py - b.base[i].y) / (b.base[j].y - b.base[i].y) + b.base[i].x)) {
+                    inside = !inside;
+                }
+            }
+            if (inside) return false;
+
+            // 2. Distance check to reject points too close to the outer walls
+            for (size_t i = 0; i < b.base.size(); ++i) {
+                size_t j = (i + 1) % b.base.size();
+                if (pointLineDistanceSq(px, py, b.base[i].x, b.base[i].y, b.base[j].x, b.base[j].y) < 4000.0f) return false;
             }
         }
         for (const Road& r : area.roads) {
-            for (const Vec2& rp : r.points) {
-                float dx = rp.x - x;
-                float dy = rp.y - y;
-                if (dx * dx + dy * dy < 4500.0f) return false; // ~67 units
+            if (r.points.empty()) continue;
+            float minD = (r.lanes == 1 ? 40.0f : (r.lanes == 2 ? 65.0f : 90.0f)) * 0.5f + 18.0f; 
+            float minD2 = minD * minD + 1000.0f; // Add some margin
+            for (size_t i = 0; i + 1 < r.points.size(); ++i) {
+                if (pointLineDistanceSq(px, py, r.points[i].x, r.points[i].y, r.points[i+1].x, r.points[i+1].y) < minD2) return false;
             }
         }
         return true;
@@ -2797,27 +2851,15 @@ void Renderer::drawPedestriansAndPets(
                     p1.y + dy * progress
                 );
 
+                float side = (e == 0) ? 1.0f : -1.0f;
+                float roadWidthWorld = (road.lanes == 1 ? 40.0f : (road.lanes == 2 ? 65.0f : 90.0f));
+                float offsetDistWorld = roadWidthWorld * 0.5f + 9.0f;
+
+                basePoint.x += nx * side * offsetDistWorld;
+                basePoint.y += ny * side * offsetDistWorld;
+
                 Vec2 screen = transformForView(basePoint, isometricMode);
                 screen = applyCamera(screen, camera);
-
-                Vec2 screenP1 = applyCamera(transformForView(p1, isometricMode), camera);
-                Vec2 screenP2 = applyCamera(transformForView(p2, isometricMode), camera);
-                
-                float dx_scr = screenP2.x - screenP1.x;
-                float dy_scr = screenP2.y - screenP1.y;
-                float len_scr = std::sqrt(dx_scr * dx_scr + dy_scr * dy_scr);
-                
-                if (len_scr > 0.01f) {
-                    float nx_scr = -dy_scr / len_scr;
-                    float ny_scr = dx_scr / len_scr;
-
-                    float side = (e == 0) ? 1.0f : -1.0f;
-                    float roadWidth = (road.lanes == 1 ? 40.0f : (road.lanes == 2 ? 65.0f : 90.0f)) * z;
-                    float offsetDist = roadWidth * 0.5f + 4.5f * z; // Middle of the sidewalk
-
-                    screen.x += nx_scr * side * offsetDist;
-                    screen.y += ny_scr * side * offsetDist;
-                }
 
                 if (screen.x < -20 || screen.y < -20 || 
                     screen.x > displaySize.x + 20 || screen.y > displaySize.y + 20) {

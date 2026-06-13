@@ -138,7 +138,7 @@ def generate_grid_city():
         "routes": routes
     }
 
-    output_path = Path("../data/demo_traffic_area.json")
+    output_path = Path("../data/random_city_area.json")
     with open(output_path, "w") as f:
         json.dump(output, f, indent=2)
 
