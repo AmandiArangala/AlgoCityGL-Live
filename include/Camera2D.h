@@ -17,9 +17,17 @@ public:
     float getOffsetX() const;
     float getOffsetY() const;
     float getZoom() const;
+    float getRotation() const;
+
+    void setRotationCenter(const Vec2& center);
+    Vec2 rotateWorldPoint(const Vec2& worldPoint) const;
+    void rotateLeft(float deltaTime);
+    void rotateRight(float deltaTime);
 
 private:
     float offsetX;
     float offsetY;
     float zoom;
+    float rotationAngle; // in radians
+    Vec2 rotationCenter;
 };
