@@ -16,6 +16,64 @@
 #include <algorithm>
 
 namespace {
+    struct Vec3 {
+        float x, y, z;
+        Vec3() : x(0), y(0), z(0) {}
+        Vec3(float x, float y, float z) : x(x), y(y), z(z) {}
+    };
+
+    Vec3 crossProduct(const Vec3& a, const Vec3& b) {
+        return Vec3(
+            a.y * b.z - a.z * b.y,
+            a.z * b.x - a.x * b.z,
+            a.x * b.y - a.y * b.x
+        );
+    }
+
+    float dotProduct(const Vec3& a, const Vec3& b) {
+        return a.x * b.x + a.y * b.y + a.z * b.z;
+    }
+
+    Vec3 normalizeVector(const Vec3& v) {
+        float len = std::sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
+        if (len > 0.0f) {
+            return Vec3(v.x / len, v.y / len, v.z / len);
+        }
+        return v;
+    }
+
+    Vec3 reflectVector(const Vec3& I, const Vec3& N) {
+        float dotNI = dotProduct(N, I);
+        return Vec3(
+            I.x - 2.0f * dotNI * N.x,
+            I.y - 2.0f * dotNI * N.y,
+            I.z - 2.0f * dotNI * N.z
+        );
+    }
+
+    float calculatePhongIllumination(const Vec3& normal, bool isNight) {
+        Vec3 lightDir = normalizeVector(Vec3(1.0f, -1.0f, 1.2f)); // Sun direction (from top-right-front)
+        Vec3 viewDir = normalizeVector(Vec3(0.0f, -1.0f, 1.0f));   // Isometric view direction approx
+        
+        if (isNight) {
+            lightDir = normalizeVector(Vec3(0.0f, 0.0f, 1.0f)); // Moon light / ambient street light from above
+        }
+
+        // Ambient
+        float ambient = isNight ? 0.3f : 0.45f;
+
+        // Diffuse
+        float diff = std::max(0.0f, dotProduct(normal, lightDir));
+        float diffuse = isNight ? diff * 0.2f : diff * 0.55f;
+
+        // Specular
+        Vec3 reflectDir = reflectVector(Vec3(-lightDir.x, -lightDir.y, -lightDir.z), normal);
+        float spec = std::pow(std::max(0.0f, dotProduct(viewDir, reflectDir)), 16.0f);
+        float specular = isNight ? spec * 0.1f : spec * 0.2f;
+
+        return ambient + diffuse + specular;
+    }
+
     struct BuildingStyle {
         ImU32 wallColor;
         ImU32 roofColor;
@@ -123,6 +181,11 @@ void Renderer::renderCityArea(
     drawStopLines(trafficLights, isometricMode, camera);
     drawPedestrianCrossings(area, isometricMode, camera);
     
+    if (!xrayMode) {
+        buildCityPixelScene(area, selectedLineAlgorithm, xrayMode, isometricMode, camera);
+        drawPixelBuffer(xrayMode);
+    }
+
     // Draw nature and entities BEFORE buildings so they are occluded properly
     drawTrees(area, isometricMode, camera);
     drawPedestriansAndPets(area, vehicles, isometricMode, camera);
@@ -137,9 +200,11 @@ void Renderer::renderCityArea(
     }
     drawBuildingWindows(area, isometricMode, camera);
 
-    // 4. Raster pixel scene
-    buildCityPixelScene(area, selectedLineAlgorithm, xrayMode, isometricMode, camera);
-    drawPixelBuffer(xrayMode);
+    // If xrayMode is true, we want the raster lines drawn ON TOP of everything
+    if (xrayMode) {
+        buildCityPixelScene(area, selectedLineAlgorithm, xrayMode, isometricMode, camera);
+        drawPixelBuffer(xrayMode);
+    }
 
     // 5. Draw weather/night tint overlay over the whole scene
     drawLiveContextOverlay(liveContext);
@@ -173,12 +238,12 @@ void Renderer::renderCityArea(
     }
 }
 
-Vec2 Renderer::transformForView(const Vec2& point, bool isometricMode) {
+Vec2 Renderer::transformForView(const Vec2& point, bool isometricMode, const Camera2D& camera) {
+    Vec2 rotated = camera.rotateWorldPoint(point);
     if (isometricMode) {
-        return Projection2_5D::projectPoint(point);
+        return Projection2_5D::projectPoint(rotated);
     }
-
-    return point;
+    return rotated;
 }
 
 Vec2 Renderer::applyCamera(const Vec2& point, const Camera2D& camera) {
@@ -217,7 +282,7 @@ void Renderer::drawRoads(
 
         staged.points.reserve(road.points.size());
         for (const Vec2& p : road.points) {
-            Vec2 proj = transformForView(p, isometricMode);
+            Vec2 proj = transformForView(p, isometricMode, camera);
             proj = applyCamera(proj, camera);
             staged.points.push_back(ImVec2(proj.x, proj.y));
         }
@@ -365,6 +430,7 @@ void Renderer::drawTopDownBuildingFills(
                 worldCenter.x + (point.x - worldCenter.x) * 0.55f,
                 worldCenter.y + (point.y - worldCenter.y) * 0.55f
             );
+            shrunkPoint = camera.rotateWorldPoint(shrunkPoint);
             Vec2 screenPoint = applyCamera(shrunkPoint, camera);
             base.push_back(ImVec2(screenPoint.x, screenPoint.y));
         }
@@ -414,6 +480,7 @@ void Renderer::drawTopDownBuildingFills(
                 worldCenter.x + (sp.x - worldCenter.x) * 0.55f * insetScale,
                 worldCenter.y + (sp.y - worldCenter.y) * 0.55f * insetScale
             );
+            shrunkPoint = camera.rotateWorldPoint(shrunkPoint);
             Vec2 screenPoint = applyCamera(shrunkPoint, camera);
             insetBase.push_back(ImVec2(screenPoint.x, screenPoint.y));
         }
@@ -502,8 +569,9 @@ void Renderer::drawBuildingFills2_5D(
         float minX = 999999.0f;
         float minY = 999999.0f;
         for (const Vec2& pt : b.base) {
-            if (pt.x < minX) minX = pt.x;
-            if (pt.y < minY) minY = pt.y;
+            Vec2 rotatedPt = camera.rotateWorldPoint(pt);
+            if (rotatedPt.x < minX) minX = rotatedPt.x;
+            if (rotatedPt.y < minY) minY = rotatedPt.y;
         }
 
         // Depth metric: back-to-front sorting.
@@ -542,6 +610,7 @@ void Renderer::drawBuildingFills2_5D(
                 center.x + (point.x - center.x) * 0.55f,
                 center.y + (point.y - center.y) * 0.55f
             );
+            shrunkPoint = camera.rotateWorldPoint(shrunkPoint);
 
             Vec2 projected = Projection2_5D::projectPoint(shrunkPoint);
             Vec2 projectedTop = Projection2_5D::shiftUp(projected, building.height);
@@ -619,8 +688,21 @@ void Renderer::drawBuildingFills2_5D(
 
             ImVec2 sideFace[4] = { base[i], base[next], top[next], top[i] };
 
-            // Calculate face orientation relative to light source
-            float shadingMultiplier = (i % 2 == 0) ? 1.15f : 0.85f;
+            // Calculate 3D Normal for Phong Illumination
+            Vec2 worldPt1 = building.base[i];
+            Vec2 worldPt2 = building.base[next];
+            Vec3 edgeDir(worldPt2.x - worldPt1.x, worldPt2.y - worldPt1.y, 0.0f);
+            Vec3 upDir(0.0f, 0.0f, building.height);
+            Vec3 faceNormal = normalizeVector(crossProduct(edgeDir, upDir));
+
+            // Ensure normal points outwards
+            Vec3 faceCenter((worldPt1.x + worldPt2.x) * 0.5f, (worldPt1.y + worldPt2.y) * 0.5f, building.height * 0.5f);
+            Vec3 toCenter(center.x - faceCenter.x, center.y - faceCenter.y, 0.0f);
+            if (dotProduct(faceNormal, toCenter) > 0.0f) {
+                faceNormal.x = -faceNormal.x; faceNormal.y = -faceNormal.y; faceNormal.z = -faceNormal.z;
+            }
+
+            float shadingMultiplier = calculatePhongIllumination(faceNormal, liveContext.isNightMode());
             ImU32 faceColor = adjustColor(bodyColor, shadingMultiplier);
             ImU32 faceTrim = adjustColor(trimColor, shadingMultiplier);
 
@@ -774,9 +856,13 @@ void Renderer::drawBuildingFills2_5D(
             ImVec2 gable1[3] = { top[rIdxA], top[rIdxB], ridgeA };
             ImVec2 gable2[3] = { top[rIdxC], top[rIdxD], ridgeB };
 
-            ImU32 brightRoof = adjustColor(roofColor, 1.1f);
-            ImU32 darkRoof = adjustColor(roofColor, 0.85f);
-            ImU32 gableColor = adjustColor(bodyColor, 0.9f);
+            float roofMult1 = calculatePhongIllumination(normalizeVector(Vec3(-1.0f, 0.0f, 1.0f)), liveContext.isNightMode());
+            float roofMult2 = calculatePhongIllumination(normalizeVector(Vec3(1.0f, 0.0f, 1.0f)), liveContext.isNightMode());
+            float gableMult1 = calculatePhongIllumination(normalizeVector(Vec3(0.0f, -1.0f, 0.0f)), liveContext.isNightMode());
+            
+            ImU32 brightRoof = adjustColor(roofColor, roofMult1);
+            ImU32 darkRoof = adjustColor(roofColor, roofMult2);
+            ImU32 gableColor = adjustColor(bodyColor, gableMult1);
 
             drawRoofFace(face1, 4, brightRoof);
             drawRoofFace(face2, 4, darkRoof);
@@ -796,8 +882,10 @@ void Renderer::drawBuildingFills2_5D(
             ImVec2 face2[4] = { top[2], top[3], inset[3], inset[2] };
             ImVec2 face3[4] = { top[3], top[0], inset[0], inset[3] };
 
-            ImU32 rDark = adjustColor(roofColor, 0.8f);
-            ImU32 rBright = adjustColor(roofColor, 1.1f);
+            float mMult1 = calculatePhongIllumination(normalizeVector(Vec3(-1.0f, 0.0f, 1.0f)), liveContext.isNightMode());
+            float mMult2 = calculatePhongIllumination(normalizeVector(Vec3(1.0f, 0.0f, 1.0f)), liveContext.isNightMode());
+            ImU32 rDark = adjustColor(roofColor, mMult2);
+            ImU32 rBright = adjustColor(roofColor, mMult1);
 
             drawRoofFace(face0, 4, rBright);
             drawRoofFace(face1, 4, rDark);
@@ -808,8 +896,9 @@ void Renderer::drawBuildingFills2_5D(
             drawRoofFace(inset, 4, IM_COL32(40, 40, 45, 255), true); // force draw top
             
         } else {
-            // Flat Roof
-            drawList->AddConvexPolyFilled(top.data(), static_cast<int>(top.size()), roofColor);
+            // Flat Roof (Normal is straight up)
+            float flatMult = calculatePhongIllumination(Vec3(0.0f, 0.0f, 1.0f), liveContext.isNightMode());
+            drawList->AddConvexPolyFilled(top.data(), static_cast<int>(top.size()), adjustColor(roofColor, flatMult));
             drawList->AddPolyline(top.data(), static_cast<int>(top.size()), IM_COL32(255, 255, 255, 65), ImDrawFlags_Closed, 1.5f * z);
 
             std::vector<ImVec2> insetTop;
@@ -926,8 +1015,8 @@ void Renderer::buildCityPixelScene(
 
     for (const Road& road : area.roads) {
         for (size_t i = 0; i + 1 < road.points.size(); i++) {
-            Vec2 a = transformForView(road.points[i], isometricMode);
-            Vec2 b = transformForView(road.points[i + 1], isometricMode);
+            Vec2 a = transformForView(road.points[i], isometricMode, camera);
+            Vec2 b = transformForView(road.points[i + 1], isometricMode, camera);
 
             a = applyCamera(a, camera);
             b = applyCamera(b, camera);
@@ -939,8 +1028,8 @@ void Renderer::buildCityPixelScene(
     if (xrayMode) {
         for (const VehicleRoute& route : area.routes) {
             for (size_t i = 0; i + 1 < route.points.size(); i++) {
-                Vec2 a = transformForView(route.points[i], isometricMode);
-                Vec2 b = transformForView(route.points[i + 1], isometricMode);
+                Vec2 a = transformForView(route.points[i], isometricMode, camera);
+                Vec2 b = transformForView(route.points[i + 1], isometricMode, camera);
 
                 a = applyCamera(a, camera);
                 b = applyCamera(b, camera);
@@ -977,6 +1066,8 @@ void Renderer::buildCityPixelScene(
                     center.x + (ptB.x - center.x) * 0.55f,
                     center.y + (ptB.y - center.y) * 0.55f
                 );
+                shrunkA = camera.rotateWorldPoint(shrunkA);
+                shrunkB = camera.rotateWorldPoint(shrunkB);
 
                 Vec2 a = applyCamera(shrunkA, camera);
                 Vec2 b = applyCamera(shrunkB, camera);
@@ -993,6 +1084,8 @@ void Renderer::buildCityPixelScene(
                     center.x + (point.x - center.x) * 0.55f,
                     center.y + (point.y - center.y) * 0.55f
                 );
+                
+                shrunkPoint = camera.rotateWorldPoint(shrunkPoint);
 
                 Vec2 projected = Projection2_5D::projectPoint(shrunkPoint);
                 Vec2 projectedTop = Projection2_5D::shiftUp(projected, building.height);
@@ -1016,8 +1109,8 @@ void Renderer::buildCityPixelScene(
 
     for (const PedestrianCrossing& crossing : area.crossings) {
         for (size_t i = 0; i + 1 < crossing.points.size(); i++) {
-            Vec2 a = transformForView(crossing.points[i], isometricMode);
-            Vec2 b = transformForView(crossing.points[i + 1], isometricMode);
+            Vec2 a = transformForView(crossing.points[i], isometricMode, camera);
+            Vec2 b = transformForView(crossing.points[i + 1], isometricMode, camera);
 
             a = applyCamera(a, camera);
             b = applyCamera(b, camera);
@@ -1037,7 +1130,7 @@ void Renderer::drawRuntimeTrafficLights(
     ImDrawList* drawList = ImGui::GetBackgroundDrawList();
 
     for (const RuntimeTrafficLight& light : trafficLights) {
-        Vec2 pos = transformForView(light.baseLight.position, isometricMode);
+        Vec2 pos = transformForView(light.baseLight.position, isometricMode, camera);
         pos = applyCamera(pos, camera);
 
         float radius = 7.0f * camera.getZoom();
@@ -1123,7 +1216,7 @@ void Renderer::drawVehicles(
         screenVertices.reserve(vertices.size());
 
         for (const Vec2& vertex : vertices) {
-            Vec2 screenPoint = transformForView(vertex, isometricMode);
+            Vec2 screenPoint = transformForView(vertex, isometricMode, camera);
             screenPoint = applyCamera(screenPoint, camera);
 
             screenVertices.push_back(ImVec2(screenPoint.x, screenPoint.y));
@@ -2005,7 +2098,7 @@ void Renderer::drawNightEffect(const CityArea& area, bool isometricMode, const C
         center.x /= static_cast<float>(building.base.size());
         center.y /= static_cast<float>(building.base.size());
 
-        center = transformForView(center, isometricMode);
+        center = transformForView(center, isometricMode, camera);
         center = applyCamera(center, camera);
 
         drawList->AddCircleFilled(
@@ -2019,7 +2112,7 @@ void Renderer::drawNightEffect(const CityArea& area, bool isometricMode, const C
 void Renderer::drawIncidentMarker(bool isometricMode, const Camera2D& camera) {
     Vec2 incidentPoint(430.0f, 410.0f);
 
-    Vec2 p = transformForView(incidentPoint, isometricMode);
+    Vec2 p = transformForView(incidentPoint, isometricMode, camera);
     p = applyCamera(p, camera);
 
     ImDrawList* drawList = ImGui::GetBackgroundDrawList();
@@ -2153,7 +2246,7 @@ Vec2 Renderer::getPolygonCenter(
     center.x /= static_cast<float>(points.size());
     center.y /= static_cast<float>(points.size());
 
-    center = transformForView(center, isometricMode);
+    center = transformForView(center, isometricMode, camera);
     center = applyCamera(center, camera);
 
     return center;
@@ -2170,7 +2263,7 @@ Vec2 Renderer::getRoadLabelPoint(
 
     Vec2 point = road.points[road.points.size() / 2];
 
-    point = transformForView(point, isometricMode);
+    point = transformForView(point, isometricMode, camera);
     point = applyCamera(point, camera);
 
     return point;
@@ -2362,7 +2455,7 @@ void Renderer::drawEnvironmentDetails(
 
     // Small junction circles to make intersections clearer.
     for (const TrafficLight& light : area.trafficLights) {
-        Vec2 p = transformForView(light.position, isometricMode);
+        Vec2 p = transformForView(light.position, isometricMode, camera);
         p = applyCamera(p, camera);
 
         float z = camera.getZoom();
@@ -2385,7 +2478,7 @@ void Renderer::drawEnvironmentDetails(
     // Draw Monumental Statue at the first major intersection
     if (!area.trafficLights.empty() && camera.getZoom() > 0.3f) {
         Vec2 monumentPos = area.trafficLights[0].position;
-        Vec2 screen = transformForView(monumentPos, isometricMode);
+        Vec2 screen = transformForView(monumentPos, isometricMode, camera);
         screen = applyCamera(screen, camera);
         
         float z = camera.getZoom();
@@ -2514,7 +2607,7 @@ void Renderer::drawTrees(
             float py = y + ((int)(x * 19 + y * 41) % 80) - 40.0f;
 
             Vec2 worldPos(px, py);
-            Vec2 screen = transformForView(worldPos, isometricMode);
+            Vec2 screen = transformForView(worldPos, isometricMode, camera);
             screen = applyCamera(screen, camera);
 
             // Frustum cull
@@ -2617,7 +2710,7 @@ void Renderer::drawStopLines(
     ImDrawList* drawList = ImGui::GetBackgroundDrawList();
 
     for (const RuntimeTrafficLight& light : trafficLights) {
-        Vec2 pos = transformForView(light.baseLight.position, isometricMode);
+        Vec2 pos = transformForView(light.baseLight.position, isometricMode, camera);
         pos = applyCamera(pos, camera);
 
         float z = camera.getZoom();
@@ -2650,8 +2743,8 @@ void Renderer::drawPedestrianCrossings(
         if (crossing.points.size() < 2) continue;
 
         for (size_t i = 0; i + 1 < crossing.points.size(); i++) {
-            Vec2 a = transformForView(crossing.points[i], isometricMode);
-            Vec2 b = transformForView(crossing.points[i + 1], isometricMode);
+            Vec2 a = transformForView(crossing.points[i], isometricMode, camera);
+            Vec2 b = transformForView(crossing.points[i + 1], isometricMode, camera);
 
             a = applyCamera(a, camera);
             b = applyCamera(b, camera);
@@ -2953,7 +3046,7 @@ void Renderer::drawPedestriansAndPets(
                 renderPoint.x += nx * side * offsetDistWorld;
                 renderPoint.y += ny * side * offsetDistWorld;
 
-                Vec2 screen = transformForView(renderPoint, isometricMode);
+                Vec2 screen = transformForView(renderPoint, isometricMode, camera);
                 screen = applyCamera(screen, camera);
 
                 if (screen.x < -20 || screen.y < -20 || 

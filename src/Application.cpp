@@ -90,8 +90,21 @@ void Application::run() {
             std::string filePath = getAreaFilePath(imguiPanels.getSelectedArea());
 
             if (areaManager.loadAreaFromFile(filePath)) {
-                vehicleController.initializeFromArea(areaManager.getCurrentArea());
-                signalController.initializeFromArea(areaManager.getCurrentArea());
+                const CityArea& area = areaManager.getCurrentArea();
+                vehicleController.initializeFromArea(area);
+                signalController.initializeFromArea(area);
+                
+                // Calculate the center of the loaded area to use as the camera's rotation pivot
+                float minX = 999999.0f, minY = 999999.0f, maxX = -999999.0f, maxY = -999999.0f;
+                for (const auto& r : area.roads) {
+                    for (const auto& pt : r.points) {
+                        if (pt.x < minX) minX = pt.x;
+                        if (pt.y < minY) minY = pt.y;
+                        if (pt.x > maxX) maxX = pt.x;
+                        if (pt.y > maxY) maxY = pt.y;
+                    }
+                }
+                camera.setRotationCenter(Vec2((minX + maxX) * 0.5f, (minY + maxY) * 0.5f));
             }
         }
 
@@ -170,6 +183,15 @@ void Application::processInput() {
 
     if (glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS) {
         camera.reset();
+    }
+    
+    // Smooth camera rotation
+    float rotationSpeed = 1.0f; // Could use deltaTime if available, but processInput is called every frame
+    if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS) {
+        camera.rotateLeft(0.016f * rotationSpeed);
+    }
+    if (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS) {
+        camera.rotateRight(0.016f * rotationSpeed);
     }
 }
 

@@ -43,7 +43,7 @@ private:
         const Camera2D& camera
     );
 
-    Vec2 transformForView(const Vec2& point, bool isometricMode);
+    Vec2 transformForView(const Vec2& point, bool isometricMode, const Camera2D& camera);
     Vec2 applyCamera(const Vec2& point, const Camera2D& camera);
 
     void drawBuildingFills2_5D(const CityArea& area, const LiveContextEngine& liveContext, const Camera2D& camera);
