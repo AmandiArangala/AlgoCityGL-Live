@@ -20,7 +20,7 @@ private:
     bool loadAreaRequested = false;
     bool resetRequested = false;
 
-    int selectedArea = 0;
+    int selectedArea = 2;
     int selectedWeather = 0;
     int selectedLineAlgorithm = 0;
     int selectedViewMode = 0;
