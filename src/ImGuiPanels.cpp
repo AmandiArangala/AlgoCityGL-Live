@@ -60,6 +60,7 @@ void ImGuiPanels::render() {
     ImGui::Text("Camera Controls:");
     ImGui::BulletText("W/A/S/D: Pan");
     ImGui::BulletText("Q/E: Zoom");
+    ImGui::BulletText("Z/X: 360 Rotation");
     ImGui::BulletText("C: Reset Camera");
 
     ImGui::End();
