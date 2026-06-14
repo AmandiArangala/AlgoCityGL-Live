@@ -94,6 +94,16 @@ bool AreaManager::loadAreaFromFile(const std::string& filePath) {
                 }
             }
 
+            light.initialState = signalJson.value("initialState", "Red");
+            light.initialTimer = signalJson.value("initialTimer", 0.0f);
+            
+            if (signalJson.contains("direction")) {
+                auto dirArr = signalJson["direction"];
+                if (dirArr.is_array() && dirArr.size() >= 2) {
+                    light.direction = Vec2(dirArr[0].get<float>(), dirArr[1].get<float>());
+                }
+            }
+
             area.trafficLights.push_back(light);
         }
     }

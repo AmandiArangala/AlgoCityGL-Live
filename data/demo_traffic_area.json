@@ -2479,574 +2479,1864 @@
   ],
   "trafficLights": [
     {
-      "id": "signal_1",
+      "id": "tl_1",
       "position": [
-        300,
-        300
-      ],
-      "cycle": [
-        3,
-        2,
-        3
-      ]
-    },
-    {
-      "id": "signal_2",
-      "position": [
-        300,
+        925,
         600
       ],
       "cycle": [
-        3,
-        2,
-        3
-      ]
-    },
-    {
-      "id": "signal_3",
-      "position": [
-        300,
-        900
+        75.0,
+        5.0,
+        20.0
       ],
-      "cycle": [
-        3,
-        2,
-        3
+      "initialState": "Green",
+      "initialTimer": 0.0,
+      "direction": [
+        -1.0,
+        0.0
       ]
     },
     {
-      "id": "signal_4",
-      "position": [
-        600,
-        300
-      ],
-      "cycle": [
-        5,
-        2,
-        6
-      ]
-    },
-    {
-      "id": "signal_5",
-      "position": [
-        600,
-        600
-      ],
-      "cycle": [
-        5,
-        2,
-        5
-      ]
-    },
-    {
-      "id": "signal_6",
-      "position": [
-        600,
-        900
-      ],
-      "cycle": [
-        5,
-        2,
-        4
-      ]
-    },
-    {
-      "id": "signal_7",
+      "id": "tl_2",
       "position": [
         900,
-        300
+        575
       ],
       "cycle": [
-        3,
-        2,
-        4
+        75.0,
+        5.0,
+        20.0
+      ],
+      "initialState": "Red",
+      "initialTimer": 50.0,
+      "direction": [
+        0.0,
+        1.0
       ]
     },
     {
-      "id": "signal_8",
+      "id": "tl_3",
+      "position": [
+        875,
+        600
+      ],
+      "cycle": [
+        75.0,
+        5.0,
+        20.0
+      ],
+      "initialState": "Red",
+      "initialTimer": 25.0,
+      "direction": [
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "id": "tl_4",
       "position": [
         900,
-        600
+        625
       ],
       "cycle": [
-        4,
-        2,
-        5
+        75.0,
+        5.0,
+        20.0
+      ],
+      "initialState": "Red",
+      "initialTimer": 0.0,
+      "direction": [
+        0.0,
+        -1.0
       ]
     },
     {
-      "id": "signal_9",
+      "id": "tl_5",
+      "position": [
+        925,
+        900
+      ],
+      "cycle": [
+        75.0,
+        5.0,
+        20.0
+      ],
+      "initialState": "Green",
+      "initialTimer": 0.0,
+      "direction": [
+        -1.0,
+        0.0
+      ]
+    },
+    {
+      "id": "tl_6",
       "position": [
         900,
-        900
+        875
       ],
       "cycle": [
-        3,
-        2,
-        3
+        75.0,
+        5.0,
+        20.0
+      ],
+      "initialState": "Red",
+      "initialTimer": 50.0,
+      "direction": [
+        0.0,
+        1.0
       ]
     },
     {
-      "id": "signal_10",
+      "id": "tl_7",
       "position": [
-        1200,
+        875,
+        900
+      ],
+      "cycle": [
+        75.0,
+        5.0,
+        20.0
+      ],
+      "initialState": "Red",
+      "initialTimer": 25.0,
+      "direction": [
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "id": "tl_8",
+      "position": [
+        900,
+        925
+      ],
+      "cycle": [
+        75.0,
+        5.0,
+        20.0
+      ],
+      "initialState": "Red",
+      "initialTimer": 0.0,
+      "direction": [
+        0.0,
+        -1.0
+      ]
+    },
+    {
+      "id": "tl_9",
+      "position": [
+        925,
         300
       ],
       "cycle": [
-        6,
-        2,
-        4
+        75.0,
+        5.0,
+        20.0
+      ],
+      "initialState": "Green",
+      "initialTimer": 0.0,
+      "direction": [
+        -1.0,
+        0.0
       ]
     },
     {
-      "id": "signal_11",
+      "id": "tl_10",
       "position": [
-        1200,
-        600
+        900,
+        275
       ],
       "cycle": [
-        3,
-        2,
-        6
-      ]
-    },
-    {
-      "id": "signal_12",
-      "position": [
-        1200,
-        900
+        75.0,
+        5.0,
+        20.0
       ],
-      "cycle": [
-        3,
-        2,
-        6
+      "initialState": "Red",
+      "initialTimer": 50.0,
+      "direction": [
+        0.0,
+        1.0
       ]
     },
     {
-      "id": "signal_13",
+      "id": "tl_11",
       "position": [
-        1500,
+        875,
         300
       ],
       "cycle": [
-        3,
-        2,
-        5
+        75.0,
+        5.0,
+        20.0
+      ],
+      "initialState": "Red",
+      "initialTimer": 25.0,
+      "direction": [
+        1.0,
+        0.0
       ]
     },
     {
-      "id": "signal_14",
+      "id": "tl_12",
       "position": [
-        1500,
+        900,
+        325
+      ],
+      "cycle": [
+        75.0,
+        5.0,
+        20.0
+      ],
+      "initialState": "Red",
+      "initialTimer": 0.0,
+      "direction": [
+        0.0,
+        -1.0
+      ]
+    },
+    {
+      "id": "tl_13",
+      "position": [
+        325,
         600
       ],
       "cycle": [
-        4,
-        2,
-        4
+        75.0,
+        5.0,
+        20.0
+      ],
+      "initialState": "Green",
+      "initialTimer": 0.0,
+      "direction": [
+        -1.0,
+        0.0
       ]
     },
     {
-      "id": "signal_15",
+      "id": "tl_14",
       "position": [
-        1500,
+        300,
+        575
+      ],
+      "cycle": [
+        75.0,
+        5.0,
+        20.0
+      ],
+      "initialState": "Red",
+      "initialTimer": 50.0,
+      "direction": [
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "id": "tl_15",
+      "position": [
+        275,
+        600
+      ],
+      "cycle": [
+        75.0,
+        5.0,
+        20.0
+      ],
+      "initialState": "Red",
+      "initialTimer": 25.0,
+      "direction": [
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "id": "tl_16",
+      "position": [
+        300,
+        625
+      ],
+      "cycle": [
+        75.0,
+        5.0,
+        20.0
+      ],
+      "initialState": "Red",
+      "initialTimer": 0.0,
+      "direction": [
+        0.0,
+        -1.0
+      ]
+    },
+    {
+      "id": "tl_17",
+      "position": [
+        325,
         900
       ],
       "cycle": [
-        5,
-        2,
-        3
+        75.0,
+        5.0,
+        20.0
+      ],
+      "initialState": "Green",
+      "initialTimer": 0.0,
+      "direction": [
+        -1.0,
+        0.0
+      ]
+    },
+    {
+      "id": "tl_18",
+      "position": [
+        300,
+        875
+      ],
+      "cycle": [
+        75.0,
+        5.0,
+        20.0
+      ],
+      "initialState": "Red",
+      "initialTimer": 50.0,
+      "direction": [
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "id": "tl_19",
+      "position": [
+        275,
+        900
+      ],
+      "cycle": [
+        75.0,
+        5.0,
+        20.0
+      ],
+      "initialState": "Red",
+      "initialTimer": 25.0,
+      "direction": [
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "id": "tl_20",
+      "position": [
+        300,
+        925
+      ],
+      "cycle": [
+        75.0,
+        5.0,
+        20.0
+      ],
+      "initialState": "Red",
+      "initialTimer": 0.0,
+      "direction": [
+        0.0,
+        -1.0
+      ]
+    },
+    {
+      "id": "tl_21",
+      "position": [
+        325,
+        300
+      ],
+      "cycle": [
+        75.0,
+        5.0,
+        20.0
+      ],
+      "initialState": "Green",
+      "initialTimer": 0.0,
+      "direction": [
+        -1.0,
+        0.0
+      ]
+    },
+    {
+      "id": "tl_22",
+      "position": [
+        300,
+        275
+      ],
+      "cycle": [
+        75.0,
+        5.0,
+        20.0
+      ],
+      "initialState": "Red",
+      "initialTimer": 50.0,
+      "direction": [
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "id": "tl_23",
+      "position": [
+        275,
+        300
+      ],
+      "cycle": [
+        75.0,
+        5.0,
+        20.0
+      ],
+      "initialState": "Red",
+      "initialTimer": 25.0,
+      "direction": [
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "id": "tl_24",
+      "position": [
+        300,
+        325
+      ],
+      "cycle": [
+        75.0,
+        5.0,
+        20.0
+      ],
+      "initialState": "Red",
+      "initialTimer": 0.0,
+      "direction": [
+        0.0,
+        -1.0
+      ]
+    },
+    {
+      "id": "tl_25",
+      "position": [
+        1225,
+        600
+      ],
+      "cycle": [
+        75.0,
+        5.0,
+        20.0
+      ],
+      "initialState": "Green",
+      "initialTimer": 0.0,
+      "direction": [
+        -1.0,
+        0.0
+      ]
+    },
+    {
+      "id": "tl_26",
+      "position": [
+        1200,
+        575
+      ],
+      "cycle": [
+        75.0,
+        5.0,
+        20.0
+      ],
+      "initialState": "Red",
+      "initialTimer": 50.0,
+      "direction": [
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "id": "tl_27",
+      "position": [
+        1175,
+        600
+      ],
+      "cycle": [
+        75.0,
+        5.0,
+        20.0
+      ],
+      "initialState": "Red",
+      "initialTimer": 25.0,
+      "direction": [
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "id": "tl_28",
+      "position": [
+        1200,
+        625
+      ],
+      "cycle": [
+        75.0,
+        5.0,
+        20.0
+      ],
+      "initialState": "Red",
+      "initialTimer": 0.0,
+      "direction": [
+        0.0,
+        -1.0
+      ]
+    },
+    {
+      "id": "tl_29",
+      "position": [
+        1225,
+        900
+      ],
+      "cycle": [
+        75.0,
+        5.0,
+        20.0
+      ],
+      "initialState": "Green",
+      "initialTimer": 0.0,
+      "direction": [
+        -1.0,
+        0.0
+      ]
+    },
+    {
+      "id": "tl_30",
+      "position": [
+        1200,
+        875
+      ],
+      "cycle": [
+        75.0,
+        5.0,
+        20.0
+      ],
+      "initialState": "Red",
+      "initialTimer": 50.0,
+      "direction": [
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "id": "tl_31",
+      "position": [
+        1175,
+        900
+      ],
+      "cycle": [
+        75.0,
+        5.0,
+        20.0
+      ],
+      "initialState": "Red",
+      "initialTimer": 25.0,
+      "direction": [
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "id": "tl_32",
+      "position": [
+        1200,
+        925
+      ],
+      "cycle": [
+        75.0,
+        5.0,
+        20.0
+      ],
+      "initialState": "Red",
+      "initialTimer": 0.0,
+      "direction": [
+        0.0,
+        -1.0
+      ]
+    },
+    {
+      "id": "tl_33",
+      "position": [
+        1225,
+        300
+      ],
+      "cycle": [
+        75.0,
+        5.0,
+        20.0
+      ],
+      "initialState": "Green",
+      "initialTimer": 0.0,
+      "direction": [
+        -1.0,
+        0.0
+      ]
+    },
+    {
+      "id": "tl_34",
+      "position": [
+        1200,
+        275
+      ],
+      "cycle": [
+        75.0,
+        5.0,
+        20.0
+      ],
+      "initialState": "Red",
+      "initialTimer": 50.0,
+      "direction": [
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "id": "tl_35",
+      "position": [
+        1175,
+        300
+      ],
+      "cycle": [
+        75.0,
+        5.0,
+        20.0
+      ],
+      "initialState": "Red",
+      "initialTimer": 25.0,
+      "direction": [
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "id": "tl_36",
+      "position": [
+        1200,
+        325
+      ],
+      "cycle": [
+        75.0,
+        5.0,
+        20.0
+      ],
+      "initialState": "Red",
+      "initialTimer": 0.0,
+      "direction": [
+        0.0,
+        -1.0
+      ]
+    },
+    {
+      "id": "tl_37",
+      "position": [
+        625,
+        600
+      ],
+      "cycle": [
+        75.0,
+        5.0,
+        20.0
+      ],
+      "initialState": "Green",
+      "initialTimer": 0.0,
+      "direction": [
+        -1.0,
+        0.0
+      ]
+    },
+    {
+      "id": "tl_38",
+      "position": [
+        600,
+        575
+      ],
+      "cycle": [
+        75.0,
+        5.0,
+        20.0
+      ],
+      "initialState": "Red",
+      "initialTimer": 50.0,
+      "direction": [
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "id": "tl_39",
+      "position": [
+        575,
+        600
+      ],
+      "cycle": [
+        75.0,
+        5.0,
+        20.0
+      ],
+      "initialState": "Red",
+      "initialTimer": 25.0,
+      "direction": [
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "id": "tl_40",
+      "position": [
+        600,
+        625
+      ],
+      "cycle": [
+        75.0,
+        5.0,
+        20.0
+      ],
+      "initialState": "Red",
+      "initialTimer": 0.0,
+      "direction": [
+        0.0,
+        -1.0
+      ]
+    },
+    {
+      "id": "tl_41",
+      "position": [
+        625,
+        900
+      ],
+      "cycle": [
+        75.0,
+        5.0,
+        20.0
+      ],
+      "initialState": "Green",
+      "initialTimer": 0.0,
+      "direction": [
+        -1.0,
+        0.0
+      ]
+    },
+    {
+      "id": "tl_42",
+      "position": [
+        600,
+        875
+      ],
+      "cycle": [
+        75.0,
+        5.0,
+        20.0
+      ],
+      "initialState": "Red",
+      "initialTimer": 50.0,
+      "direction": [
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "id": "tl_43",
+      "position": [
+        575,
+        900
+      ],
+      "cycle": [
+        75.0,
+        5.0,
+        20.0
+      ],
+      "initialState": "Red",
+      "initialTimer": 25.0,
+      "direction": [
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "id": "tl_44",
+      "position": [
+        600,
+        925
+      ],
+      "cycle": [
+        75.0,
+        5.0,
+        20.0
+      ],
+      "initialState": "Red",
+      "initialTimer": 0.0,
+      "direction": [
+        0.0,
+        -1.0
+      ]
+    },
+    {
+      "id": "tl_45",
+      "position": [
+        625,
+        300
+      ],
+      "cycle": [
+        75.0,
+        5.0,
+        20.0
+      ],
+      "initialState": "Green",
+      "initialTimer": 0.0,
+      "direction": [
+        -1.0,
+        0.0
+      ]
+    },
+    {
+      "id": "tl_46",
+      "position": [
+        600,
+        275
+      ],
+      "cycle": [
+        75.0,
+        5.0,
+        20.0
+      ],
+      "initialState": "Red",
+      "initialTimer": 50.0,
+      "direction": [
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "id": "tl_47",
+      "position": [
+        575,
+        300
+      ],
+      "cycle": [
+        75.0,
+        5.0,
+        20.0
+      ],
+      "initialState": "Red",
+      "initialTimer": 25.0,
+      "direction": [
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "id": "tl_48",
+      "position": [
+        600,
+        325
+      ],
+      "cycle": [
+        75.0,
+        5.0,
+        20.0
+      ],
+      "initialState": "Red",
+      "initialTimer": 0.0,
+      "direction": [
+        0.0,
+        -1.0
+      ]
+    },
+    {
+      "id": "tl_49",
+      "position": [
+        1525,
+        600
+      ],
+      "cycle": [
+        75.0,
+        5.0,
+        20.0
+      ],
+      "initialState": "Green",
+      "initialTimer": 0.0,
+      "direction": [
+        -1.0,
+        0.0
+      ]
+    },
+    {
+      "id": "tl_50",
+      "position": [
+        1500,
+        575
+      ],
+      "cycle": [
+        75.0,
+        5.0,
+        20.0
+      ],
+      "initialState": "Red",
+      "initialTimer": 50.0,
+      "direction": [
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "id": "tl_51",
+      "position": [
+        1475,
+        600
+      ],
+      "cycle": [
+        75.0,
+        5.0,
+        20.0
+      ],
+      "initialState": "Red",
+      "initialTimer": 25.0,
+      "direction": [
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "id": "tl_52",
+      "position": [
+        1500,
+        625
+      ],
+      "cycle": [
+        75.0,
+        5.0,
+        20.0
+      ],
+      "initialState": "Red",
+      "initialTimer": 0.0,
+      "direction": [
+        0.0,
+        -1.0
+      ]
+    },
+    {
+      "id": "tl_53",
+      "position": [
+        1525,
+        900
+      ],
+      "cycle": [
+        75.0,
+        5.0,
+        20.0
+      ],
+      "initialState": "Green",
+      "initialTimer": 0.0,
+      "direction": [
+        -1.0,
+        0.0
+      ]
+    },
+    {
+      "id": "tl_54",
+      "position": [
+        1500,
+        875
+      ],
+      "cycle": [
+        75.0,
+        5.0,
+        20.0
+      ],
+      "initialState": "Red",
+      "initialTimer": 50.0,
+      "direction": [
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "id": "tl_55",
+      "position": [
+        1475,
+        900
+      ],
+      "cycle": [
+        75.0,
+        5.0,
+        20.0
+      ],
+      "initialState": "Red",
+      "initialTimer": 25.0,
+      "direction": [
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "id": "tl_56",
+      "position": [
+        1500,
+        925
+      ],
+      "cycle": [
+        75.0,
+        5.0,
+        20.0
+      ],
+      "initialState": "Red",
+      "initialTimer": 0.0,
+      "direction": [
+        0.0,
+        -1.0
+      ]
+    },
+    {
+      "id": "tl_57",
+      "position": [
+        1525,
+        300
+      ],
+      "cycle": [
+        75.0,
+        5.0,
+        20.0
+      ],
+      "initialState": "Green",
+      "initialTimer": 0.0,
+      "direction": [
+        -1.0,
+        0.0
+      ]
+    },
+    {
+      "id": "tl_58",
+      "position": [
+        1500,
+        275
+      ],
+      "cycle": [
+        75.0,
+        5.0,
+        20.0
+      ],
+      "initialState": "Red",
+      "initialTimer": 50.0,
+      "direction": [
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "id": "tl_59",
+      "position": [
+        1475,
+        300
+      ],
+      "cycle": [
+        75.0,
+        5.0,
+        20.0
+      ],
+      "initialState": "Red",
+      "initialTimer": 25.0,
+      "direction": [
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "id": "tl_60",
+      "position": [
+        1500,
+        325
+      ],
+      "cycle": [
+        75.0,
+        5.0,
+        20.0
+      ],
+      "initialState": "Red",
+      "initialTimer": 0.0,
+      "direction": [
+        0.0,
+        -1.0
       ]
     }
   ],
   "crossings": [
     {
-      "id": "crossing_1",
+      "id": "cross_900_600_N",
       "points": [
         [
-          285,
-          285
+          880,
+          580
         ],
         [
-          315,
-          285
+          920,
+          580
         ]
       ]
     },
     {
-      "id": "crossing_2",
+      "id": "cross_900_600_S",
       "points": [
         [
-          285,
-          315
+          880,
+          620
         ],
         [
-          315,
-          315
+          920,
+          620
         ]
       ]
     },
     {
-      "id": "crossing_3",
+      "id": "cross_900_600_W",
       "points": [
         [
-          285,
-          585
+          880,
+          580
         ],
         [
-          315,
-          585
+          880,
+          620
         ]
       ]
     },
     {
-      "id": "crossing_4",
+      "id": "cross_900_600_E",
       "points": [
         [
-          285,
-          615
+          920,
+          580
         ],
         [
-          315,
-          615
+          920,
+          620
         ]
       ]
     },
     {
-      "id": "crossing_5",
+      "id": "cross_900_900_N",
       "points": [
         [
-          285,
-          885
+          880,
+          880
         ],
         [
-          315,
-          885
+          920,
+          880
         ]
       ]
     },
     {
-      "id": "crossing_6",
+      "id": "cross_900_900_S",
       "points": [
         [
-          285,
-          915
+          880,
+          920
         ],
         [
-          315,
-          915
+          920,
+          920
         ]
       ]
     },
     {
-      "id": "crossing_7",
+      "id": "cross_900_900_W",
       "points": [
         [
-          585,
-          285
+          880,
+          880
         ],
         [
-          615,
-          285
+          880,
+          920
         ]
       ]
     },
     {
-      "id": "crossing_8",
+      "id": "cross_900_900_E",
       "points": [
         [
-          585,
-          315
+          920,
+          880
         ],
         [
-          615,
-          315
+          920,
+          920
         ]
       ]
     },
     {
-      "id": "crossing_9",
+      "id": "cross_900_300_N",
       "points": [
         [
-          585,
-          585
+          880,
+          280
         ],
         [
-          615,
-          585
+          920,
+          280
         ]
       ]
     },
     {
-      "id": "crossing_10",
+      "id": "cross_900_300_S",
       "points": [
         [
-          585,
-          615
+          880,
+          320
         ],
         [
-          615,
-          615
+          920,
+          320
         ]
       ]
     },
     {
-      "id": "crossing_11",
+      "id": "cross_900_300_W",
       "points": [
         [
-          585,
-          885
+          880,
+          280
         ],
         [
-          615,
-          885
+          880,
+          320
         ]
       ]
     },
     {
-      "id": "crossing_12",
+      "id": "cross_900_300_E",
       "points": [
         [
-          585,
-          915
+          920,
+          280
         ],
         [
-          615,
-          915
+          920,
+          320
         ]
       ]
     },
     {
-      "id": "crossing_13",
+      "id": "cross_300_600_N",
       "points": [
         [
-          885,
-          285
+          280,
+          580
         ],
         [
-          915,
-          285
+          320,
+          580
         ]
       ]
     },
     {
-      "id": "crossing_14",
+      "id": "cross_300_600_S",
       "points": [
         [
-          885,
-          315
+          280,
+          620
         ],
         [
-          915,
-          315
+          320,
+          620
         ]
       ]
     },
     {
-      "id": "crossing_15",
+      "id": "cross_300_600_W",
       "points": [
         [
-          885,
-          585
+          280,
+          580
         ],
         [
-          915,
-          585
+          280,
+          620
         ]
       ]
     },
     {
-      "id": "crossing_16",
+      "id": "cross_300_600_E",
       "points": [
         [
-          885,
-          615
+          320,
+          580
         ],
         [
-          915,
-          615
+          320,
+          620
         ]
       ]
     },
     {
-      "id": "crossing_17",
+      "id": "cross_300_900_N",
       "points": [
         [
-          885,
-          885
+          280,
+          880
         ],
         [
-          915,
-          885
+          320,
+          880
         ]
       ]
     },
     {
-      "id": "crossing_18",
+      "id": "cross_300_900_S",
       "points": [
         [
-          885,
-          915
+          280,
+          920
         ],
         [
-          915,
-          915
+          320,
+          920
         ]
       ]
     },
     {
-      "id": "crossing_19",
+      "id": "cross_300_900_W",
       "points": [
         [
-          1185,
-          285
+          280,
+          880
         ],
         [
-          1215,
-          285
+          280,
+          920
         ]
       ]
     },
     {
-      "id": "crossing_20",
+      "id": "cross_300_900_E",
       "points": [
         [
-          1185,
-          315
+          320,
+          880
         ],
         [
-          1215,
-          315
+          320,
+          920
         ]
       ]
     },
     {
-      "id": "crossing_21",
+      "id": "cross_300_300_N",
       "points": [
         [
-          1185,
-          585
+          280,
+          280
         ],
         [
-          1215,
-          585
+          320,
+          280
         ]
       ]
     },
     {
-      "id": "crossing_22",
+      "id": "cross_300_300_S",
       "points": [
         [
-          1185,
-          615
+          280,
+          320
         ],
         [
-          1215,
-          615
+          320,
+          320
         ]
       ]
     },
     {
-      "id": "crossing_23",
+      "id": "cross_300_300_W",
       "points": [
         [
-          1185,
-          885
+          280,
+          280
         ],
         [
-          1215,
-          885
+          280,
+          320
         ]
       ]
     },
     {
-      "id": "crossing_24",
+      "id": "cross_300_300_E",
       "points": [
         [
-          1185,
-          915
+          320,
+          280
         ],
         [
-          1215,
-          915
+          320,
+          320
         ]
       ]
     },
     {
-      "id": "crossing_25",
+      "id": "cross_1200_600_N",
       "points": [
         [
-          1485,
-          285
+          1180,
+          580
         ],
         [
-          1515,
-          285
+          1220,
+          580
         ]
       ]
     },
     {
-      "id": "crossing_26",
+      "id": "cross_1200_600_S",
       "points": [
         [
-          1485,
-          315
+          1180,
+          620
         ],
         [
-          1515,
-          315
+          1220,
+          620
         ]
       ]
     },
     {
-      "id": "crossing_27",
+      "id": "cross_1200_600_W",
       "points": [
         [
-          1485,
-          585
+          1180,
+          580
         ],
         [
-          1515,
-          585
+          1180,
+          620
         ]
       ]
     },
     {
-      "id": "crossing_28",
+      "id": "cross_1200_600_E",
       "points": [
         [
-          1485,
-          615
+          1220,
+          580
         ],
         [
-          1515,
-          615
+          1220,
+          620
         ]
       ]
     },
     {
-      "id": "crossing_29",
+      "id": "cross_1200_900_N",
       "points": [
         [
-          1485,
-          885
+          1180,
+          880
         ],
         [
-          1515,
-          885
+          1220,
+          880
         ]
       ]
     },
     {
-      "id": "crossing_30",
+      "id": "cross_1200_900_S",
       "points": [
         [
-          1485,
-          915
+          1180,
+          920
         ],
         [
-          1515,
-          915
+          1220,
+          920
+        ]
+      ]
+    },
+    {
+      "id": "cross_1200_900_W",
+      "points": [
+        [
+          1180,
+          880
+        ],
+        [
+          1180,
+          920
+        ]
+      ]
+    },
+    {
+      "id": "cross_1200_900_E",
+      "points": [
+        [
+          1220,
+          880
+        ],
+        [
+          1220,
+          920
+        ]
+      ]
+    },
+    {
+      "id": "cross_1200_300_N",
+      "points": [
+        [
+          1180,
+          280
+        ],
+        [
+          1220,
+          280
+        ]
+      ]
+    },
+    {
+      "id": "cross_1200_300_S",
+      "points": [
+        [
+          1180,
+          320
+        ],
+        [
+          1220,
+          320
+        ]
+      ]
+    },
+    {
+      "id": "cross_1200_300_W",
+      "points": [
+        [
+          1180,
+          280
+        ],
+        [
+          1180,
+          320
+        ]
+      ]
+    },
+    {
+      "id": "cross_1200_300_E",
+      "points": [
+        [
+          1220,
+          280
+        ],
+        [
+          1220,
+          320
+        ]
+      ]
+    },
+    {
+      "id": "cross_600_600_N",
+      "points": [
+        [
+          580,
+          580
+        ],
+        [
+          620,
+          580
+        ]
+      ]
+    },
+    {
+      "id": "cross_600_600_S",
+      "points": [
+        [
+          580,
+          620
+        ],
+        [
+          620,
+          620
+        ]
+      ]
+    },
+    {
+      "id": "cross_600_600_W",
+      "points": [
+        [
+          580,
+          580
+        ],
+        [
+          580,
+          620
+        ]
+      ]
+    },
+    {
+      "id": "cross_600_600_E",
+      "points": [
+        [
+          620,
+          580
+        ],
+        [
+          620,
+          620
+        ]
+      ]
+    },
+    {
+      "id": "cross_600_900_N",
+      "points": [
+        [
+          580,
+          880
+        ],
+        [
+          620,
+          880
+        ]
+      ]
+    },
+    {
+      "id": "cross_600_900_S",
+      "points": [
+        [
+          580,
+          920
+        ],
+        [
+          620,
+          920
+        ]
+      ]
+    },
+    {
+      "id": "cross_600_900_W",
+      "points": [
+        [
+          580,
+          880
+        ],
+        [
+          580,
+          920
+        ]
+      ]
+    },
+    {
+      "id": "cross_600_900_E",
+      "points": [
+        [
+          620,
+          880
+        ],
+        [
+          620,
+          920
+        ]
+      ]
+    },
+    {
+      "id": "cross_600_300_N",
+      "points": [
+        [
+          580,
+          280
+        ],
+        [
+          620,
+          280
+        ]
+      ]
+    },
+    {
+      "id": "cross_600_300_S",
+      "points": [
+        [
+          580,
+          320
+        ],
+        [
+          620,
+          320
+        ]
+      ]
+    },
+    {
+      "id": "cross_600_300_W",
+      "points": [
+        [
+          580,
+          280
+        ],
+        [
+          580,
+          320
+        ]
+      ]
+    },
+    {
+      "id": "cross_600_300_E",
+      "points": [
+        [
+          620,
+          280
+        ],
+        [
+          620,
+          320
+        ]
+      ]
+    },
+    {
+      "id": "cross_1500_600_N",
+      "points": [
+        [
+          1480,
+          580
+        ],
+        [
+          1520,
+          580
+        ]
+      ]
+    },
+    {
+      "id": "cross_1500_600_S",
+      "points": [
+        [
+          1480,
+          620
+        ],
+        [
+          1520,
+          620
+        ]
+      ]
+    },
+    {
+      "id": "cross_1500_600_W",
+      "points": [
+        [
+          1480,
+          580
+        ],
+        [
+          1480,
+          620
+        ]
+      ]
+    },
+    {
+      "id": "cross_1500_600_E",
+      "points": [
+        [
+          1520,
+          580
+        ],
+        [
+          1520,
+          620
+        ]
+      ]
+    },
+    {
+      "id": "cross_1500_900_N",
+      "points": [
+        [
+          1480,
+          880
+        ],
+        [
+          1520,
+          880
+        ]
+      ]
+    },
+    {
+      "id": "cross_1500_900_S",
+      "points": [
+        [
+          1480,
+          920
+        ],
+        [
+          1520,
+          920
+        ]
+      ]
+    },
+    {
+      "id": "cross_1500_900_W",
+      "points": [
+        [
+          1480,
+          880
+        ],
+        [
+          1480,
+          920
+        ]
+      ]
+    },
+    {
+      "id": "cross_1500_900_E",
+      "points": [
+        [
+          1520,
+          880
+        ],
+        [
+          1520,
+          920
+        ]
+      ]
+    },
+    {
+      "id": "cross_1500_300_N",
+      "points": [
+        [
+          1480,
+          280
+        ],
+        [
+          1520,
+          280
+        ]
+      ]
+    },
+    {
+      "id": "cross_1500_300_S",
+      "points": [
+        [
+          1480,
+          320
+        ],
+        [
+          1520,
+          320
+        ]
+      ]
+    },
+    {
+      "id": "cross_1500_300_W",
+      "points": [
+        [
+          1480,
+          280
+        ],
+        [
+          1480,
+          320
+        ]
+      ]
+    },
+    {
+      "id": "cross_1500_300_E",
+      "points": [
+        [
+          1520,
+          280
+        ],
+        [
+          1520,
+          320
         ]
       ]
     }

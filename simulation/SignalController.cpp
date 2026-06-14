@@ -6,8 +6,14 @@ void SignalController::initializeFromArea(const CityArea& area) {
     for (const TrafficLight& light : area.trafficLights) {
         RuntimeTrafficLight runtimeLight;
         runtimeLight.baseLight = light;
-        runtimeLight.state = SignalState::Red;
-        runtimeLight.timer = 0.0f;
+        if (light.initialState == "Green") {
+            runtimeLight.state = SignalState::Green;
+        } else if (light.initialState == "Yellow") {
+            runtimeLight.state = SignalState::Yellow;
+        } else {
+            runtimeLight.state = SignalState::Red;
+        }
+        runtimeLight.timer = light.initialTimer;
 
         trafficLights.push_back(runtimeLight);
     }

@@ -3,9 +3,9 @@
 
 void VehicleController::initializeFromArea(const CityArea& area) {
     vehicles.clear();
+    allRoutes = area.routes;
 
     std::cout << "Initializing vehicles from routes..." << std::endl;
-
     int skipStep = 1;
     if (area.routes.size() > 150) {
         skipStep = 4; // Capping vehicle density to ~25% for dense real-world maps (e.g. Borella, Pettah)
@@ -34,7 +34,8 @@ void VehicleController::initializeFromArea(const CityArea& area) {
                 std::vector<RuntimeTrafficLight> dummyLights;
                 float advanceTime = v * 8.0f; // Space them by 8 seconds of driving
                 for (float t = 0; t < advanceTime; t += 0.1f) {
-                    vehicle.update(0.1f, dummyLights);
+                    std::vector<Vehicle> emptyVehicles;
+                    vehicle.update(0.1f, dummyLights, emptyVehicles, allRoutes);
                 }
 
                 vehicles.push_back(vehicle);
@@ -61,7 +62,7 @@ void VehicleController::update(
     }
 
     for (Vehicle& vehicle : vehicles) {
-        vehicle.update(deltaTime, trafficLights);
+        vehicle.update(deltaTime, trafficLights, vehicles, allRoutes);
     }
 }
 

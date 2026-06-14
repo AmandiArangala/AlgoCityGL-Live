@@ -16,4 +16,5 @@ public:
 
 private:
     std::vector<Vehicle> vehicles;
+    std::vector<VehicleRoute> allRoutes;
 };

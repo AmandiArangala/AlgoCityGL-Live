@@ -15,6 +15,82 @@
 #include <cmath>
 #include <algorithm>
 
+namespace {
+    struct BuildingStyle {
+        ImU32 wallColor;
+        ImU32 roofColor;
+        ImU32 windowColor;
+        ImU32 trimColor;
+        int windowType;
+        int roofType;
+        int baseType;
+    };
+
+    BuildingStyle getBuildingStyle(size_t index) {
+        int hash = index % 8;
+        BuildingStyle s;
+        switch (hash) {
+            case 0:
+                s.wallColor = IM_COL32(180, 60, 40, 255);
+                s.roofColor = IM_COL32(120, 40, 30, 255);
+                s.windowColor = IM_COL32(80, 150, 200, 255);
+                s.trimColor = IM_COL32(230, 230, 220, 255);
+                s.windowType = 0; s.roofType = 2; s.baseType = 0;
+                break;
+            case 1:
+                s.wallColor = IM_COL32(100, 180, 220, 255);
+                s.roofColor = IM_COL32(150, 200, 230, 255);
+                s.windowColor = IM_COL32(40, 100, 160, 255);
+                s.trimColor = IM_COL32(180, 190, 200, 255);
+                s.windowType = 1; s.roofType = 0; s.baseType = 1;
+                break;
+            case 2:
+                s.wallColor = IM_COL32(160, 90, 50, 255);
+                s.roofColor = IM_COL32(130, 120, 110, 255);
+                s.windowColor = IM_COL32(255, 200, 100, 255);
+                s.trimColor = IM_COL32(190, 160, 120, 255);
+                s.windowType = 2; s.roofType = 1; s.baseType = 0;
+                break;
+            case 3:
+                s.wallColor = IM_COL32(240, 180, 60, 255);
+                s.roofColor = IM_COL32(200, 80, 40, 255);
+                s.windowColor = IM_COL32(100, 180, 180, 255);
+                s.trimColor = IM_COL32(200, 80, 40, 255);
+                s.windowType = 0; s.roofType = 1; s.baseType = 2;
+                break;
+            case 4:
+                s.wallColor = IM_COL32(100, 50, 40, 255);
+                s.roofColor = IM_COL32(150, 140, 130, 255);
+                s.windowColor = IM_COL32(150, 200, 220, 255);
+                s.trimColor = IM_COL32(255, 255, 255, 255);
+                s.windowType = 4; s.roofType = 2; s.baseType = 2;
+                break;
+            case 5:
+                s.wallColor = IM_COL32(230, 200, 150, 255);
+                s.roofColor = IM_COL32(210, 60, 40, 255);
+                s.windowColor = IM_COL32(100, 180, 240, 255);
+                s.trimColor = IM_COL32(180, 140, 100, 255);
+                s.windowType = 0; s.roofType = 2; s.baseType = 2;
+                break;
+            case 6:
+                s.wallColor = IM_COL32(190, 80, 50, 255);
+                s.roofColor = IM_COL32(60, 65, 70, 255);
+                s.windowColor = IM_COL32(120, 160, 180, 255);
+                s.trimColor = IM_COL32(240, 240, 240, 255);
+                s.windowType = 0; s.roofType = 3; s.baseType = 2;
+                break;
+            case 7:
+                s.wallColor = IM_COL32(220, 210, 190, 255);
+                s.roofColor = IM_COL32(150, 160, 150, 255);
+                s.windowColor = IM_COL32(80, 180, 150, 255);
+                s.trimColor = IM_COL32(255, 250, 240, 255);
+                s.windowType = 3; s.roofType = 1; s.baseType = 2;
+                break;
+        }
+        return s;
+    }
+}
+
 void Renderer::initialize() {
     glClearColor(0.08f, 0.10f, 0.13f, 1.0f);
 }
@@ -49,7 +125,7 @@ void Renderer::renderCityArea(
     
     // Draw nature and entities BEFORE buildings so they are occluded properly
     drawTrees(area, isometricMode, camera);
-    drawPedestriansAndPets(area, isometricMode, camera);
+    drawPedestriansAndPets(area, vehicles, isometricMode, camera);
     drawRuntimeTrafficLights(trafficLights, isometricMode, camera);
     drawVehicles(vehicles, isometricMode, camera, liveContext);
 
@@ -236,14 +312,15 @@ void Renderer::drawRoadMarkings(
 
     if (lanes == 1) {
         drawDashedLine(0.0f);
-    } else if (lanes == 2) {
-        drawDashedLine(0.0f);
     } else {
-        // 3+ lanes: center dashed and side dashed
-        drawDashedLine(0.0f);
+        // Center solid line (Yellow/White depending on preference, we'll use Yellow for a real-world look)
+        ImVec2 pt1(a.x, a.y);
+        ImVec2 pt2(b.x, b.y);
+        drawList->AddLine(pt1, pt2, IM_COL32(255, 215, 0, 220), 3.0f * z);
+
+        // Dashed lines to separate the 2 lanes on each side
         drawDashedLine(roadWidth * 0.25f);
         drawDashedLine(-roadWidth * 0.25f);
-
     }
 }
 
@@ -305,28 +382,9 @@ void Renderer::drawTopDownBuildingFills(
             IM_COL32(0, 0, 0, 95)
         );
 
-        // Determine building styling
-        int style = buildingIndex % 4;
-        ImU32 roofColor;
-        ImU32 borderColor;
-
-        if (style == 0) {
-            // Style 0: Dark slate roof (modern gravel)
-            roofColor = IM_COL32(42, 46, 50, 255);
-            borderColor = IM_COL32(80, 85, 90, 255);
-        } else if (style == 1) {
-            // Style 1: Light concrete roof
-            roofColor = IM_COL32(185, 190, 195, 255);
-            borderColor = IM_COL32(110, 115, 120, 255);
-        } else if (style == 2) {
-            // Style 2: Solar panel roof (dark navy blue)
-            roofColor = IM_COL32(20, 35, 60, 255);
-            borderColor = IM_COL32(60, 80, 110, 255);
-        } else {
-            // Style 3: Terracotta roof tiles
-            roofColor = IM_COL32(200, 95, 65, 255);
-            borderColor = IM_COL32(140, 60, 40, 255);
-        }
+        BuildingStyle bStyle = getBuildingStyle(buildingIndex);
+        ImU32 roofColor = bStyle.roofColor;
+        ImU32 borderColor = bStyle.wallColor;
 
         // 2. Draw Main Building Body (Roof)
         drawList->AddConvexPolyFilled(
@@ -335,84 +393,79 @@ void Renderer::drawTopDownBuildingFills(
             roofColor
         );
 
-        // Draw Thick Border
+        // Draw Thick Border (Outer Wall)
         drawList->AddPolyline(
             base.data(),
             static_cast<int>(base.size()),
             borderColor,
             ImDrawFlags_Closed,
-            2.5f * z
+            3.0f * z
         );
 
-        // 3. Draw Inner Shadow / Border Inset
+        // 3. Draw Inner Shadow / Border Inset & Roof Type details
         std::vector<ImVec2> insetBase;
         insetBase.reserve(base.size());
-        ImVec2 center(0.0f, 0.0f);
-        for (const ImVec2& p : base) {
-            center.x += p.x;
-            center.y += p.y;
+        
+        float insetScale = (bStyle.roofType == 3) ? 0.7f : 0.85f; // Mansard has wider sloped area
+
+        for (size_t i = 0; i < base.size(); ++i) {
+            Vec2 sp = building.base[i];
+            Vec2 shrunkPoint(
+                worldCenter.x + (sp.x - worldCenter.x) * 0.55f * insetScale,
+                worldCenter.y + (sp.y - worldCenter.y) * 0.55f * insetScale
+            );
+            Vec2 screenPoint = applyCamera(shrunkPoint, camera);
+            insetBase.push_back(ImVec2(screenPoint.x, screenPoint.y));
         }
-        center.x /= base.size();
-        center.y /= base.size();
 
-        for (const ImVec2& p : base) {
-            insetBase.push_back(lerp(p, center, 0.08f));
-        }
-
-        drawList->AddPolyline(
-            insetBase.data(),
-            static_cast<int>(insetBase.size()),
-            IM_COL32(0, 0, 0, 50),
-            ImDrawFlags_Closed,
-            1.0f * z
-        );
-
-        // 4. Roof Details
-        if (z > 0.40f) {
-            if (style == 2) {
-                // Draw Solar Panel Grid Lines
-                for (float t = 0.2f; t < 0.9f; t += 0.2f) {
-                    ImVec2 startL = lerp(insetBase[0], insetBase[1], t);
-                    ImVec2 endL = lerp(insetBase[3], insetBase[2], t);
-                    drawList->AddLine(startL, endL, IM_COL32(100, 180, 255, 60), 1.0f * z);
-                }
-            } else if (building.height > 80.0f) {
-                // Tall buildings get a Helipad
-                float padRadius = 9.0f * z;
-                drawList->AddCircleFilled(center, padRadius, IM_COL32(230, 40, 40, 225));
-                drawList->AddCircle(center, padRadius, IM_COL32(255, 255, 255, 240), 0, 1.5f * z);
-                // Draw "H"
-                drawList->AddLine(
-                    ImVec2(center.x - 4.5f * z, center.y - 5.0f * z),
-                    ImVec2(center.x - 4.5f * z, center.y + 5.0f * z),
-                    IM_COL32(255, 255, 255, 255),
-                    2.0f * z
+        if (bStyle.roofType == 3) {
+            // Mansard roof: Draw inset as flat top, outer as sloped.
+            ImU32 flatTopColor = IM_COL32(40, 40, 45, 255);
+            drawList->AddConvexPolyFilled(insetBase.data(), static_cast<int>(insetBase.size()), flatTopColor);
+            drawList->AddPolyline(insetBase.data(), static_cast<int>(insetBase.size()), IM_COL32(30, 30, 35, 255), ImDrawFlags_Closed, 1.0f * z);
+        } else if (bStyle.roofType == 2) {
+            // Gable roof: split in half
+            if (base.size() == 4) {
+                ImVec2 ridge1 = lerp(base[0], base[1], 0.5f);
+                ImVec2 ridge2 = lerp(base[3], base[2], 0.5f);
+                
+                ImVec2 half1[4] = { base[0], ridge1, ridge2, base[3] };
+                ImVec2 half2[4] = { ridge1, base[1], base[2], ridge2 };
+                
+                // Darken one half
+                ImU32 shadedColor = IM_COL32(
+                    (roofColor & 0xFF) * 0.8f,
+                    ((roofColor >> 8) & 0xFF) * 0.8f,
+                    ((roofColor >> 16) & 0xFF) * 0.8f,
+                    255
                 );
-                drawList->AddLine(
-                    ImVec2(center.x + 4.5f * z, center.y - 5.0f * z),
-                    ImVec2(center.x + 4.5f * z, center.y + 5.0f * z),
-                    IM_COL32(255, 255, 255, 255),
-                    2.0f * z
-                );
-                drawList->AddLine(
-                    ImVec2(center.x - 4.5f * z, center.y),
-                    ImVec2(center.x + 4.5f * z, center.y),
-                    IM_COL32(255, 255, 255, 255),
-                    2.0f * z
-                );
-            } else {
-                // Small ventilation/machinery boxes
+                
+                drawList->AddConvexPolyFilled(half1, 4, roofColor);
+                drawList->AddConvexPolyFilled(half2, 4, shadedColor);
+                drawList->AddLine(ridge1, ridge2, IM_COL32(0, 0, 0, 100), 2.0f * z);
+            }
+        } else {
+            // Flat roof
+            drawList->AddPolyline(
+                insetBase.data(),
+                static_cast<int>(insetBase.size()),
+                IM_COL32(0, 0, 0, 40),
+                ImDrawFlags_Closed,
+                2.0f * z
+            );
+            
+            // Draw AC units if large enough
+            if (z > 0.4f && insetBase.size() >= 4) {
+                ImVec2 center = lerp(insetBase[0], insetBase[2], 0.5f);
                 ImVec2 box0 = lerp(insetBase[0], center, 0.4f);
                 ImVec2 box2 = lerp(insetBase[0], center, 0.7f);
                 ImVec2 box1(box2.x, box0.y);
                 ImVec2 box3(box0.x, box2.y);
                 ImVec2 ventBox[4] = { box0, box1, box2, box3 };
-
+                
                 // Vent Shadow
                 ImVec2 ventShadow[4];
-                for (int v = 0; v < 4; v++) {
-                    ventShadow[v] = ImVec2(ventBox[v].x + 2.0f * z, ventBox[v].y + 2.0f * z);
-                }
+                for (int v = 0; v < 4; v++) ventShadow[v] = ImVec2(ventBox[v].x + 2.0f * z, ventBox[v].y + 2.0f * z);
                 drawList->AddConvexPolyFilled(ventShadow, 4, IM_COL32(0, 0, 0, 60));
                 // Vent Body
                 drawList->AddConvexPolyFilled(ventBox, 4, IM_COL32(100, 105, 110, 255));
@@ -515,42 +568,19 @@ void Renderer::drawBuildingFills2_5D(
             IM_COL32(0, 0, 0, 75)
         );
 
-        // Determine building material and color palette
-        int material = buildingIndex % 4;
-        ImU32 bodyColor;
-        ImU32 roofColor;
-        ImU32 lineWhite = IM_COL32(255, 255, 255, 65);
+        BuildingStyle bStyle = getBuildingStyle(buildingIndex);
+        ImU32 bodyColor = bStyle.wallColor;
+        ImU32 roofColor = bStyle.roofColor;
+        ImU32 trimColor = bStyle.trimColor;
+        ImU32 windowColorBase = bStyle.windowColor;
         ImU32 lineDark = IM_COL32(0, 0, 0, 60);
-
-        if (material == 0) {
-            // Glass Skyscraper: Deep navy blue with bright cyan roof
-            bodyColor = IM_COL32(20, 60, 100, 240);
-            roofColor = IM_COL32(40, 150, 210, 255);
-        } else if (material == 1) {
-            // Concrete / Brutalist: Warm sand/gray concrete
-            bodyColor = IM_COL32(145, 140, 130, 240);
-            roofColor = IM_COL32(175, 170, 160, 255);
-        } else if (material == 2) {
-            // Terracotta / Brick: Deep terracotta orange
-            bodyColor = IM_COL32(165, 70, 45, 240);
-            roofColor = IM_COL32(200, 100, 75, 255);
-        } else {
-            // Modern Tech Obsidian: Dark slate grey
-            bodyColor = IM_COL32(45, 50, 55, 240);
-            roofColor = IM_COL32(75, 80, 85, 255);
-        }
 
         // Helper lambda to adjust color brightness
         auto adjustColor = [](ImU32 col, float multiplier) -> ImU32 {
-            int r = (col & 0xFF);
-            int g = ((col >> 8) & 0xFF);
-            int b = ((col >> 16) & 0xFF);
+            int r = std::max(0, std::min(255, static_cast<int>((col & 0xFF) * multiplier)));
+            int g = std::max(0, std::min(255, static_cast<int>(((col >> 8) & 0xFF) * multiplier)));
+            int b = std::max(0, std::min(255, static_cast<int>(((col >> 16) & 0xFF) * multiplier)));
             int a = ((col >> 24) & 0xFF);
-
-            r = std::max(0, std::min(255, static_cast<int>(r * multiplier)));
-            g = std::max(0, std::min(255, static_cast<int>(g * multiplier)));
-            b = std::max(0, std::min(255, static_cast<int>(b * multiplier)));
-
             return IM_COL32(r, g, b, a);
         };
 
@@ -562,150 +592,154 @@ void Renderer::drawBuildingFills2_5D(
         }
         bool isClockwise = (baseArea < 0.0f);
 
-        // 2. Draw Side Faces (Walls) with Perspective Shading & Textures
+        // Find the longest front face to potentially draw a pediment/gable
+        float maxFrontFaceLenSq = -1.0f;
+        size_t longestFrontFaceIdx = -1;
         for (size_t i = 0; i < base.size(); i++) {
             size_t next = (i + 1) % base.size();
-
             float dx = base[next].x - base[i].x;
             bool isFrontFace = isClockwise ? (dx <= 0.0f) : (dx >= 0.0f);
-            if (!isFrontFace) continue;
-
-            ImVec2 sideFace[4] = {
-                base[i],
-                base[next],
-                top[next],
-                top[i]
-            };
-
-            // Calculate face orientation relative to light source
-            float shadingMultiplier = (i % 2 == 0) ? 1.15f : 0.85f;
-            ImU32 faceColor = adjustColor(bodyColor, shadingMultiplier);
-
-            drawList->AddConvexPolyFilled(sideFace, 4, faceColor);
-
-            // Draw facade structural lines / panel dividers (realism detail)
-            if (z > 0.40f) {
-                if (material == 0) {
-                    // Glass grid columns
-                    for (int c = 1; c < 5; c++) {
-                        float tx = static_cast<float>(c) / 5.0f;
-                        drawList->AddLine(
-                            lerp(sideFace[0], sideFace[1], tx),
-                            lerp(sideFace[3], sideFace[2], tx),
-                            IM_COL32(120, 200, 240, 60),
-                            0.8f * z
-                        );
-                    }
-                    // Glass grid rows
-                    for (int r = 1; r < 6; r++) {
-                        float ty = static_cast<float>(r) / 6.0f;
-                        drawList->AddLine(
-                            lerp(sideFace[0], sideFace[3], ty),
-                            lerp(sideFace[1], sideFace[2], ty),
-                            IM_COL32(120, 200, 240, 60),
-                            0.8f * z
-                        );
-                    }
-                } else if (material == 1) {
-                    // Concrete horizontal seam lines
-                    for (int r = 1; r < 4; r++) {
-                        float ty = static_cast<float>(r) / 4.0f;
-                        drawList->AddLine(
-                            lerp(sideFace[0], sideFace[3], ty),
-                            lerp(sideFace[1], sideFace[2], ty),
-                            IM_COL32(75, 70, 65, 80),
-                            1.0f * z
-                        );
-                    }
-                } else if (material == 2) {
-                    // Brick row lines
-                    for (int r = 1; r < 12; r++) {
-                        float ty = static_cast<float>(r) / 12.0f;
-                        drawList->AddLine(
-                            lerp(sideFace[0], sideFace[3], ty),
-                            lerp(sideFace[1], sideFace[2], ty),
-                            IM_COL32(100, 40, 25, 70),
-                            0.7f * z
-                        );
-                    }
-                } else {
-                    // Modern obsidian panel rows
-                    for (int r = 1; r < 5; r++) {
-                        float ty = static_cast<float>(r) / 5.0f;
-                        drawList->AddLine(
-                            lerp(sideFace[0], sideFace[3], ty),
-                            lerp(sideFace[1], sideFace[2], ty),
-                            IM_COL32(20, 22, 25, 120),
-                            1.2f * z
-                        );
-                    }
-                }
-            }
-            
-            // Draw face border outline (white highlights on bright side, dark lines on dark side)
-            ImU32 outlineColor = (i % 2 == 0) ? lineWhite : lineDark;
-            drawList->AddPolyline(sideFace, 4, outlineColor, ImDrawFlags_Closed, 1.0f * z);
-
-            // 3. Draw Isometric Windows on Walls (if zoomed in enough)
-            if (z > 0.45f) {
-                // Determine windows count based on building height/width
-                // Determine windows count based on building height
-                int num_rows = 3 + static_cast<int>(building.height / 30.0f);
-                bool isNight = liveContext.isNightMode();
-
-                for (int r = 0; r < num_rows; r++) {
-                    float tx0 = 0.04f;
-                    float tx1 = 0.96f;
-                    float ty0 = (r + 0.30f) / num_rows;
-                    float ty1 = (r + 0.70f) / num_rows;
-
-                    auto getFacePoint = [&](float tx, float ty) {
-                        ImVec2 bot = lerp(sideFace[0], sideFace[1], tx);
-                        ImVec2 tp = lerp(sideFace[3], sideFace[2], tx);
-                        return lerp(bot, tp, ty);
-                    };
-
-                    ImVec2 w0 = getFacePoint(tx0, ty0);
-                    ImVec2 w1 = getFacePoint(tx1, ty0);
-                    ImVec2 w2 = getFacePoint(tx1, ty1);
-                    ImVec2 w3 = getFacePoint(tx0, ty1);
-
-                    ImVec2 windowPane[4] = { w0, w1, w2, w3 };
-
-                    // Dark continuous window strip (unless night lit)
-                    ImU32 windowColor;
-                    if (isNight) {
-                        int hash = (r * 13 + buildingIndex * 97 + static_cast<int>(i) * 11) % 100;
-                        if (hash < 25) {
-                            windowColor = IM_COL32(255, 215, 80, 220); // Warm Lit
-                        } else {
-                            windowColor = IM_COL32(22, 26, 35, 240); // Dark
-                        }
-                    } else {
-                        windowColor = IM_COL32(25, 30, 35, 245); // Dark tinted window strip
-                    }
-
-                    drawList->AddConvexPolyFilled(windowPane, 4, windowColor);
-                    drawList->AddPolyline(windowPane, 4, IM_COL32(10, 15, 20, 100), ImDrawFlags_Closed, 0.5f * z);
+            if (isFrontFace) {
+                float dy = base[next].y - base[i].y;
+                float lenSq = dx*dx + dy*dy;
+                if (lenSq > maxFrontFaceLenSq) {
+                    maxFrontFaceLenSq = lenSq;
+                    longestFrontFaceIdx = i;
                 }
             }
         }
 
-        // 4. Draw Roof Face
-        drawList->AddConvexPolyFilled(
-            top.data(),
-            static_cast<int>(top.size()),
-            roofColor
-        );
-        drawList->AddPolyline(
-            top.data(),
-            static_cast<int>(top.size()),
-            lineWhite,
-            ImDrawFlags_Closed,
-            1.5f * z
-        );
+        // 2. Draw Side Faces (Walls) with Procedural Textures & Windows
+        for (size_t i = 0; i < base.size(); i++) {
+            size_t next = (i + 1) % base.size();
+            float dx = base[next].x - base[i].x;
+            bool isFrontFace = isClockwise ? (dx <= 0.0f) : (dx >= 0.0f);
+            
+            if (!isFrontFace) continue;
 
-        // Draw Inset roof border / Parapet wall
+            ImVec2 sideFace[4] = { base[i], base[next], top[next], top[i] };
+
+            // Calculate face orientation relative to light source
+            float shadingMultiplier = (i % 2 == 0) ? 1.15f : 0.85f;
+            ImU32 faceColor = adjustColor(bodyColor, shadingMultiplier);
+            ImU32 faceTrim = adjustColor(trimColor, shadingMultiplier);
+
+            drawList->AddConvexPolyFilled(sideFace, 4, faceColor);
+
+            auto getQuadPoint = [&](float u, float v) {
+                ImVec2 bot = lerp(sideFace[0], sideFace[1], u);
+                ImVec2 tp = lerp(sideFace[3], sideFace[2], u);
+                return lerp(bot, tp, v);
+            };
+
+            // Draw Base/Shopfront
+            if (bStyle.baseType == 2 && z > 0.45f) {
+                // Shopfront (bottom 20% of the building or fixed height)
+                float shopHeightV = std::min(0.25f, 25.0f / building.height);
+                ImVec2 shopQuad[4] = {
+                    getQuadPoint(0.0f, 0.0f), getQuadPoint(1.0f, 0.0f),
+                    getQuadPoint(1.0f, shopHeightV), getQuadPoint(0.0f, shopHeightV)
+                };
+                drawList->AddConvexPolyFilled(shopQuad, 4, IM_COL32(30, 30, 35, 255));
+                drawList->AddPolyline(shopQuad, 4, faceTrim, ImDrawFlags_Closed, 1.5f * z);
+                
+                // Shop windows/doors
+                for (int c = 1; c < 4; c++) {
+                    float u0 = (c - 0.3f) / 4.0f;
+                    float u1 = (c + 0.3f) / 4.0f;
+                    ImVec2 wQ[4] = {
+                        getQuadPoint(u0, 0.05f), getQuadPoint(u1, 0.05f),
+                        getQuadPoint(u1, shopHeightV - 0.05f), getQuadPoint(u0, shopHeightV - 0.05f)
+                    };
+                    ImU32 shopWindowColor = liveContext.isNightMode() ? IM_COL32(255, 240, 150, 240) : IM_COL32(80, 120, 150, 200);
+                    drawList->AddConvexPolyFilled(wQ, 4, shopWindowColor);
+                }
+            } else if (bStyle.baseType == 1 && z > 0.45f) {
+                // Pillars (Modern)
+                float pillarV = std::min(0.15f, 15.0f / building.height);
+                drawList->AddConvexPolyFilled(sideFace, 4, IM_COL32(20, 20, 20, 255)); // dark inside
+                for (int c = 0; c <= 4; c++) {
+                    float u = c / 4.0f;
+                    ImVec2 p0 = getQuadPoint(u - 0.02f, 0.0f);
+                    ImVec2 p1 = getQuadPoint(u + 0.02f, 0.0f);
+                    ImVec2 p2 = getQuadPoint(u + 0.02f, pillarV);
+                    ImVec2 p3 = getQuadPoint(u - 0.02f, pillarV);
+                    ImVec2 pillar[4] = { p0, p1, p2, p3 };
+                    drawList->AddConvexPolyFilled(pillar, 4, faceTrim);
+                }
+            }
+
+            // Draw Windows
+            if (z > 0.45f) {
+                float startV = (bStyle.baseType > 0) ? std::min(0.3f, 30.0f / building.height) : 0.05f;
+                int rows = std::max(2, (int)((building.height * (1.0f - startV)) / 25.0f));
+                int cols = std::max(2, (int)(std::sqrt(maxFrontFaceLenSq) / 25.0f));
+                
+                bool isNight = liveContext.isNightMode();
+
+                for (int r = 0; r < rows; r++) {
+                    for (int c = 0; c < cols; c++) {
+                        float u0 = (c + 0.2f) / cols;
+                        float u1 = (c + 0.8f) / cols;
+                        float v0 = startV + (r + 0.2f) * (1.0f - startV) / rows;
+                        float v1 = startV + (r + 0.8f) * (1.0f - startV) / rows;
+
+                        ImU32 wColor = windowColorBase;
+                        if (isNight) {
+                            int hash = (r * 13 + c * 7 + buildingIndex * 97 + static_cast<int>(i) * 11) % 100;
+                            wColor = (hash < 30) ? IM_COL32(255, 215, 100, 240) : IM_COL32(20, 25, 30, 255);
+                        }
+
+                        if (bStyle.windowType == 1) { // Modern Horizontal strips
+                            u0 = 0.0f; u1 = 1.0f;
+                            if (c > 0) continue; // Only draw one strip per row
+                        } else if (bStyle.windowType == 2) { // Tall Arches
+                            if (r > 0) continue; // Draw one tall arch spanning all rows
+                            v1 = 0.95f; 
+                        }
+
+                        ImVec2 wQ[4] = { getQuadPoint(u0, v0), getQuadPoint(u1, v0), getQuadPoint(u1, v1), getQuadPoint(u0, v1) };
+                        drawList->AddConvexPolyFilled(wQ, 4, wColor);
+
+                        // Window Frames / Trims
+                        if (bStyle.windowType == 0 || bStyle.windowType == 3 || bStyle.windowType == 4) {
+                            drawList->AddPolyline(wQ, 4, faceTrim, ImDrawFlags_Closed, 1.0f * z);
+                            if (bStyle.windowType == 3 && r == rows - 1) { // Arched top
+                                ImVec2 archC = getQuadPoint((u0+u1)/2, v1);
+                                drawList->AddTriangleFilled(wQ[3], wQ[2], archC, wColor);
+                                drawList->AddLine(wQ[3], archC, faceTrim, 1.0f * z);
+                                drawList->AddLine(wQ[2], archC, faceTrim, 1.0f * z);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Draw face border outline
+            drawList->AddPolyline(sideFace, 4, lineDark, ImDrawFlags_Closed, 1.0f * z);
+
+            // Draw Gable/Pediment if this is the longest face and roofType is 2 (Gable)
+            if (bStyle.roofType == 2 && i == longestFrontFaceIdx) {
+                ImVec2 pedimentPeak = getQuadPoint(0.5f, 1.3f);
+                ImVec2 pedimentQuad[3] = { sideFace[3], sideFace[2], pedimentPeak };
+                drawList->AddTriangleFilled(sideFace[3], sideFace[2], pedimentPeak, faceColor);
+                drawList->AddLine(sideFace[3], pedimentPeak, faceTrim, 2.0f * z);
+                drawList->AddLine(sideFace[2], pedimentPeak, faceTrim, 2.0f * z);
+            }
+        }
+
+        // 4. Draw 3D Roof Geometry
+        auto drawRoofFace = [&](ImVec2* poly, int count, ImU32 col, bool forceDraw = false) {
+            float area = 0;
+            for (int k = 0; k < count; k++) {
+                area += (poly[(k + 1) % count].x - poly[k].x) * (poly[(k + 1) % count].y + poly[k].y);
+            }
+            if (area < 0.0f || forceDraw) { // Front-facing (clockwise)
+                drawList->AddConvexPolyFilled(poly, count, col);
+                drawList->AddPolyline(poly, count, IM_COL32(0, 0, 0, 50), ImDrawFlags_Closed, 1.0f * z);
+            }
+        };
+
         ImVec2 roofCenter(0.0f, 0.0f);
         for (const ImVec2& p : top) {
             roofCenter.x += p.x;
@@ -714,106 +748,125 @@ void Renderer::drawBuildingFills2_5D(
         roofCenter.x /= top.size();
         roofCenter.y /= top.size();
 
-        std::vector<ImVec2> insetTop;
-        insetTop.reserve(top.size());
-        for (const ImVec2& p : top) {
-            insetTop.push_back(lerp(p, roofCenter, 0.08f));
-        }
+        if (bStyle.roofType == 2 && top.size() == 4) {
+            // Gable Roof
+            ImVec2 ridgeA, ridgeB;
+            float len01 = (top[0].x - top[1].x)*(top[0].x - top[1].x) + (top[0].y - top[1].y)*(top[0].y - top[1].y);
+            float len12 = (top[1].x - top[2].x)*(top[1].x - top[2].x) + (top[1].y - top[2].y)*(top[1].y - top[2].y);
+            
+            int rIdxA, rIdxB, rIdxC, rIdxD;
+            if (len01 < len12) {
+                ridgeA = lerp(top[0], top[1], 0.5f);
+                ridgeB = lerp(top[3], top[2], 0.5f);
+                rIdxA = 0; rIdxB = 1; rIdxC = 2; rIdxD = 3;
+            } else {
+                ridgeA = lerp(top[1], top[2], 0.5f);
+                ridgeB = lerp(top[0], top[3], 0.5f);
+                rIdxA = 1; rIdxB = 2; rIdxC = 3; rIdxD = 0;
+            }
+            
+            ridgeA.y -= 25.0f * z;
+            ridgeB.y -= 25.0f * z;
 
-        drawList->AddPolyline(
-            insetTop.data(),
-            static_cast<int>(insetTop.size()),
-            adjustColor(roofColor, 0.80f),
-            ImDrawFlags_Closed,
-            1.2f * z
-        );
+            // 4 Faces of the Gable
+            ImVec2 face1[4] = { top[rIdxA], ridgeA, ridgeB, top[rIdxD] };
+            ImVec2 face2[4] = { top[rIdxB], top[rIdxC], ridgeB, ridgeA };
+            ImVec2 gable1[3] = { top[rIdxA], top[rIdxB], ridgeA };
+            ImVec2 gable2[3] = { top[rIdxC], top[rIdxD], ridgeB };
 
-        // 5. Draw Billboards (on select rooftops)
-        if (buildingIndex % 5 == 0 && top.size() >= 2) {
-            ImVec2 p0 = top[0];
-            ImVec2 p1 = top[1];
-            
-            ImVec2 poleTop0(p0.x, p0.y - 12.0f * z);
-            ImVec2 poleTop1(p1.x, p1.y - 12.0f * z);
-            
-            // Poles
-            drawList->AddLine(p0, poleTop0, IM_COL32(120, 120, 120, 255), 2.5f * z);
-            drawList->AddLine(p1, poleTop1, IM_COL32(120, 120, 120, 255), 2.5f * z);
-            
-            // Billboard Board
-            float bbHeight = 18.0f * z;
-            ImVec2 bb0 = poleTop0;
-            ImVec2 bb1 = poleTop1;
-            ImVec2 bb2(bb1.x, bb1.y - bbHeight);
-            ImVec2 bb3(bb0.x, bb0.y - bbHeight);
-            
-            ImVec2 bbFace[4] = { bb0, bb1, bb2, bb3 };
-            drawList->AddConvexPolyFilled(bbFace, 4, IM_COL32(245, 245, 250, 255)); // Blank White Billboard
-            drawList->AddPolyline(bbFace, 4, IM_COL32(50, 50, 50, 255), ImDrawFlags_Closed, 1.5f * z); // Grey Frame
-        }
+            ImU32 brightRoof = adjustColor(roofColor, 1.1f);
+            ImU32 darkRoof = adjustColor(roofColor, 0.85f);
+            ImU32 gableColor = adjustColor(bodyColor, 0.9f);
 
-        // 5. Draw Roof Solar Panels (for obsidian buildings) or Helipad (for tall buildings)
-        if (z > 0.40f) {
-            if (material == 3) {
-                // Solar grid in the center
-                std::vector<ImVec2> solarBase;
-                solarBase.reserve(top.size());
-                for (const ImVec2& p : top) {
-                    solarBase.push_back(lerp(p, roofCenter, 0.15f));
-                }
-                drawList->AddConvexPolyFilled(solarBase.data(), static_cast<int>(solarBase.size()), IM_COL32(15, 25, 45, 245));
-                drawList->AddPolyline(solarBase.data(), static_cast<int>(solarBase.size()), IM_COL32(50, 90, 150, 150), ImDrawFlags_Closed, 1.0f * z);
-                // Grid divides
-                for (float t = 0.25f; t < 0.9f; t += 0.25f) {
-                    drawList->AddLine(lerp(solarBase[0], solarBase[1], t), lerp(solarBase[3], solarBase[2], t), IM_COL32(60, 100, 160, 160), 0.8f * z);
-                    drawList->AddLine(lerp(solarBase[0], solarBase[3], t), lerp(solarBase[1], solarBase[2], t), IM_COL32(60, 100, 160, 160), 0.8f * z);
-                }
-            } else if (building.height > 80.0f) {
-                // Helipad
-                float padRadius = 9.0f * z;
-                drawList->AddCircleFilled(roofCenter, padRadius, IM_COL32(230, 40, 40, 225));
-                drawList->AddCircle(roofCenter, padRadius, IM_COL32(255, 255, 255, 240), 0, 1.5f * z);
-                
-                // "H" letter
-                drawList->AddLine(
-                    ImVec2(roofCenter.x - 4.5f * z, roofCenter.y - 5.0f * z),
-                    ImVec2(roofCenter.x - 4.5f * z, roofCenter.y + 5.0f * z),
-                    IM_COL32(255, 255, 255, 255),
-                    2.0f * z
-                );
-                drawList->AddLine(
-                    ImVec2(roofCenter.x + 4.5f * z, roofCenter.y - 5.0f * z),
-                    ImVec2(roofCenter.x + 4.5f * z, roofCenter.y + 5.0f * z),
-                    IM_COL32(255, 255, 255, 255),
-                    2.0f * z
-                );
-                drawList->AddLine(
-                    ImVec2(roofCenter.x - 4.5f * z, roofCenter.y),
-                    ImVec2(roofCenter.x + 4.5f * z, roofCenter.y),
-                    IM_COL32(255, 255, 255, 255),
-                    2.0f * z
-                );
+            drawRoofFace(face1, 4, brightRoof);
+            drawRoofFace(face2, 4, darkRoof);
+            drawRoofFace(gable1, 3, gableColor);
+            drawRoofFace(gable2, 3, gableColor);
+            
+        } else if (bStyle.roofType == 3 && top.size() == 4) {
+            // Mansard Roof
+            ImVec2 inset[4];
+            for (int k = 0; k < 4; k++) {
+                inset[k] = lerp(top[k], roofCenter, 0.25f);
+                inset[k].y -= 20.0f * z;
             }
 
-            // Draw HVAC machinery box on the side of the roof
-            ImVec2 hvacBase0 = ImVec2(roofCenter.x + 8.0f * z, roofCenter.y - 1.0f * z);
-            ImVec2 hvacBase1 = ImVec2(roofCenter.x + 13.0f * z, roofCenter.y - 3.0f * z);
-            ImVec2 hvacBase2 = ImVec2(roofCenter.x + 11.0f * z, roofCenter.y - 6.0f * z);
-            ImVec2 hvacBase3 = ImVec2(roofCenter.x + 6.0f * z, roofCenter.y - 4.0f * z);
-            ImVec2 hvacTop0(hvacBase0.x, hvacBase0.y - 5.0f * z);
-            ImVec2 hvacTop1(hvacBase1.x, hvacBase1.y - 5.0f * z);
-            ImVec2 hvacTop2(hvacBase2.x, hvacBase2.y - 5.0f * z);
-            ImVec2 hvacTop3(hvacBase3.x, hvacBase3.y - 5.0f * z);
+            ImVec2 face0[4] = { top[0], top[1], inset[1], inset[0] };
+            ImVec2 face1[4] = { top[1], top[2], inset[2], inset[1] };
+            ImVec2 face2[4] = { top[2], top[3], inset[3], inset[2] };
+            ImVec2 face3[4] = { top[3], top[0], inset[0], inset[3] };
 
-            ImVec2 hL[4] = { hvacBase0, hvacBase1, hvacTop1, hvacTop0 };
-            ImVec2 hR[4] = { hvacBase1, hvacBase2, hvacTop2, hvacTop1 };
-            ImVec2 hT[4] = { hvacTop0, hvacTop1, hvacTop2, hvacTop3 };
+            ImU32 rDark = adjustColor(roofColor, 0.8f);
+            ImU32 rBright = adjustColor(roofColor, 1.1f);
 
-            drawList->AddConvexPolyFilled(hL, 4, IM_COL32(110, 110, 115, 255));
-            drawList->AddConvexPolyFilled(hR, 4, IM_COL32(80, 80, 85, 255));
-            drawList->AddConvexPolyFilled(hT, 4, IM_COL32(140, 140, 145, 255));
-            drawList->AddPolyline(hL, 4, IM_COL32(50, 50, 55, 255), ImDrawFlags_Closed, 0.8f * z);
-            drawList->AddPolyline(hR, 4, IM_COL32(50, 50, 55, 255), ImDrawFlags_Closed, 0.8f * z);
+            drawRoofFace(face0, 4, rBright);
+            drawRoofFace(face1, 4, rDark);
+            drawRoofFace(face2, 4, rDark);
+            drawRoofFace(face3, 4, rBright);
+
+            // Flat top
+            drawRoofFace(inset, 4, IM_COL32(40, 40, 45, 255), true); // force draw top
+            
+        } else {
+            // Flat Roof
+            drawList->AddConvexPolyFilled(top.data(), static_cast<int>(top.size()), roofColor);
+            drawList->AddPolyline(top.data(), static_cast<int>(top.size()), IM_COL32(255, 255, 255, 65), ImDrawFlags_Closed, 1.5f * z);
+
+            std::vector<ImVec2> insetTop;
+            insetTop.reserve(top.size());
+            for (const ImVec2& p : top) insetTop.push_back(lerp(p, roofCenter, 0.08f));
+            drawList->AddPolyline(insetTop.data(), static_cast<int>(insetTop.size()), adjustColor(roofColor, 0.80f), ImDrawFlags_Closed, 1.2f * z);
+
+            // Billboards
+            if (buildingIndex % 5 == 0 && top.size() >= 2) {
+                ImVec2 poleTop0(top[0].x, top[0].y - 12.0f * z);
+                ImVec2 poleTop1(top[1].x, top[1].y - 12.0f * z);
+                drawList->AddLine(top[0], poleTop0, IM_COL32(120, 120, 120, 255), 2.5f * z);
+                drawList->AddLine(top[1], poleTop1, IM_COL32(120, 120, 120, 255), 2.5f * z);
+                
+                ImVec2 bbFace[4] = { poleTop0, poleTop1, ImVec2(poleTop1.x, poleTop1.y - 18.0f * z), ImVec2(poleTop0.x, poleTop0.y - 18.0f * z) };
+                drawList->AddConvexPolyFilled(bbFace, 4, IM_COL32(245, 245, 250, 255));
+                drawList->AddPolyline(bbFace, 4, IM_COL32(50, 50, 50, 255), ImDrawFlags_Closed, 1.5f * z);
+            }
+
+            // Props (Solar / Helipad / AC)
+            if (z > 0.40f) {
+                if (buildingIndex % 4 == 3) {
+                    std::vector<ImVec2> solarBase;
+                    solarBase.reserve(top.size());
+                    for (const ImVec2& p : top) solarBase.push_back(lerp(p, roofCenter, 0.15f));
+                    drawList->AddConvexPolyFilled(solarBase.data(), static_cast<int>(solarBase.size()), IM_COL32(15, 25, 45, 245));
+                    for (float t = 0.25f; t < 0.9f; t += 0.25f) {
+                        drawList->AddLine(lerp(solarBase[0], solarBase[1], t), lerp(solarBase[3], solarBase[2], t), IM_COL32(60, 100, 160, 160), 0.8f * z);
+                        drawList->AddLine(lerp(solarBase[0], solarBase[3], t), lerp(solarBase[1], solarBase[2], t), IM_COL32(60, 100, 160, 160), 0.8f * z);
+                    }
+                } else if (building.height > 80.0f) {
+                    float padRadius = 9.0f * z;
+                    drawList->AddCircleFilled(roofCenter, padRadius, IM_COL32(230, 40, 40, 225));
+                    drawList->AddCircle(roofCenter, padRadius, IM_COL32(255, 255, 255, 240), 0, 1.5f * z);
+                    drawList->AddLine(ImVec2(roofCenter.x - 4.5f * z, roofCenter.y - 5.0f * z), ImVec2(roofCenter.x - 4.5f * z, roofCenter.y + 5.0f * z), IM_COL32(255, 255, 255, 255), 2.0f * z);
+                    drawList->AddLine(ImVec2(roofCenter.x + 4.5f * z, roofCenter.y - 5.0f * z), ImVec2(roofCenter.x + 4.5f * z, roofCenter.y + 5.0f * z), IM_COL32(255, 255, 255, 255), 2.0f * z);
+                    drawList->AddLine(ImVec2(roofCenter.x - 4.5f * z, roofCenter.y), ImVec2(roofCenter.x + 4.5f * z, roofCenter.y), IM_COL32(255, 255, 255, 255), 2.0f * z);
+                }
+
+                ImVec2 hvacBase[4] = {
+                    ImVec2(roofCenter.x + 8.0f * z, roofCenter.y - 1.0f * z),
+                    ImVec2(roofCenter.x + 13.0f * z, roofCenter.y - 3.0f * z),
+                    ImVec2(roofCenter.x + 11.0f * z, roofCenter.y - 6.0f * z),
+                    ImVec2(roofCenter.x + 6.0f * z, roofCenter.y - 4.0f * z)
+                };
+                ImVec2 hvacTop[4];
+                for (int k = 0; k < 4; k++) hvacTop[k] = ImVec2(hvacBase[k].x, hvacBase[k].y - 5.0f * z);
+                
+                ImVec2 hL[4] = { hvacBase[0], hvacBase[1], hvacTop[1], hvacTop[0] };
+                ImVec2 hR[4] = { hvacBase[1], hvacBase[2], hvacTop[2], hvacTop[1] };
+                
+                drawList->AddConvexPolyFilled(hL, 4, IM_COL32(110, 110, 115, 255));
+                drawList->AddConvexPolyFilled(hR, 4, IM_COL32(80, 80, 85, 255));
+                drawList->AddConvexPolyFilled(hvacTop, 4, IM_COL32(150, 150, 155, 255));
+                drawList->AddPolyline(hvacTop, 4, IM_COL32(50, 50, 50, 255), ImDrawFlags_Closed, 1.0f * z);
+            }
+        }
 
             // Tall buildings get a warning beacon light on a mast
             if (building.height > 80.0f) {
@@ -830,7 +883,6 @@ void Renderer::drawBuildingFills2_5D(
             }
         }
     }
-}
 
 void Renderer::buildCityPixelScene(
     const CityArea& area,
@@ -2809,13 +2861,24 @@ void Renderer::drawForegroundBirds(const Camera2D& camera) {
 
 void Renderer::drawPedestriansAndPets(
     const CityArea& area,
+    const std::vector<Vehicle>& vehicles,
     bool isometricMode,
     const Camera2D& camera
 ) {
     ImDrawList* drawList = ImGui::GetBackgroundDrawList();
     ImVec2 displaySize = ImGui::GetIO().DisplaySize;
-    float time = ImGui::GetTime();
+    float time = static_cast<float>(ImGui::GetTime());
     float z = camera.getZoom();
+
+    static std::vector<float> pedestrianAccumulatedTimes;
+    static float lastPedestrianUpdateTime = -1.0f;
+
+    float dt = 0.0f;
+    if (lastPedestrianUpdateTime >= 0.0f) {
+        dt = time - lastPedestrianUpdateTime;
+    }
+    if (dt > 1.0f) dt = 1.0f; // Protect against large dt jumps
+    lastPedestrianUpdateTime = time;
 
     int pedCount = 0;
     const int maxPeds = 200;
@@ -2831,24 +2894,31 @@ void Renderer::drawPedestriansAndPets(
             float dy = p2.y - p1.y;
             float length = std::sqrt(dx * dx + dy * dy);
 
-            if (length < 60.0f) continue;
+            if (length < 5.0f) continue;
 
             float nx = -dy / length;
             float ny = dx / length;
 
-            // Spawn 2 entities per segment
-            for (int e = 0; e < 2; e++) {
+            // Moderate density: 1 entity every ~60 units
+            if (i % 3 != 0) continue;
+
+            // Spawn 1 entity per chosen segment
+            for (int e = 0; e < 1; e++) {
+                if (pedCount >= pedestrianAccumulatedTimes.size()) {
+                    pedestrianAccumulatedTimes.push_back(time);
+                }
+
                 // Offset calculation for movement
                 float speed = 20.0f + ((i + e) % 15);
                 float duration = length / speed;
-                float progress = fmod(time + (i * 7.0f + e * 13.0f), duration) / duration;
                 
-                // One moves forward, one moves backward
-                if (e == 1) progress = 1.0f - progress;
+                // Calculate potential current progress
+                float currentProgress = fmod(pedestrianAccumulatedTimes[pedCount] + (i * 7.0f + e * 13.0f), duration) / duration;
+                if (e == 1) currentProgress = 1.0f - currentProgress;
 
                 Vec2 basePoint(
-                    p1.x + dx * progress,
-                    p1.y + dy * progress
+                    p1.x + dx * currentProgress,
+                    p1.y + dy * currentProgress
                 );
 
                 float side = (e == 0) ? 1.0f : -1.0f;
@@ -2858,11 +2928,37 @@ void Renderer::drawPedestriansAndPets(
                 basePoint.x += nx * side * offsetDistWorld;
                 basePoint.y += ny * side * offsetDistWorld;
 
-                Vec2 screen = transformForView(basePoint, isometricMode);
+                bool vehicleNear = false;
+                for (const auto& veh : vehicles) {
+                    Vec2 vpos = veh.getPosition();
+                    float vdx = vpos.x - basePoint.x;
+                    float vdy = vpos.y - basePoint.y;
+                    if (vdx*vdx + vdy*vdy < 4000.0f && veh.getSpeed() > 0.5f) {
+                        vehicleNear = true;
+                        break;
+                    }
+                }
+
+                if (!vehicleNear) {
+                    pedestrianAccumulatedTimes[pedCount] += dt;
+                }
+
+                float renderProgress = fmod(pedestrianAccumulatedTimes[pedCount] + (i * 7.0f + e * 13.0f), duration) / duration;
+                if (e == 1) renderProgress = 1.0f - renderProgress;
+
+                Vec2 renderPoint(
+                    p1.x + dx * renderProgress,
+                    p1.y + dy * renderProgress
+                );
+                renderPoint.x += nx * side * offsetDistWorld;
+                renderPoint.y += ny * side * offsetDistWorld;
+
+                Vec2 screen = transformForView(renderPoint, isometricMode);
                 screen = applyCamera(screen, camera);
 
                 if (screen.x < -20 || screen.y < -20 || 
                     screen.x > displaySize.x + 20 || screen.y > displaySize.y + 20) {
+                    pedCount++;
                     continue;
                 }
 
@@ -2876,7 +2972,7 @@ void Renderer::drawPedestriansAndPets(
                 if (entType < 2) {
                     // Draw Person
                     // Legs
-                    float walkBob = sinf(time * speed * 0.5f) * 1.5f * s;
+                    float walkBob = sinf(pedestrianAccumulatedTimes[pedCount] * speed * 0.5f) * 1.5f * s;
                     drawList->AddLine(ImVec2(screen.x - 1.5f*s, screen.y - 2.0f*s), ImVec2(screen.x - 1.5f*s - walkBob, screen.y + 1.0f*s), IM_COL32(50, 50, 60, 255), 1.5f*s);
                     drawList->AddLine(ImVec2(screen.x + 1.5f*s, screen.y - 2.0f*s), ImVec2(screen.x + 1.5f*s + walkBob, screen.y + 1.0f*s), IM_COL32(50, 50, 60, 255), 1.5f*s);
                     // Body
@@ -2886,7 +2982,7 @@ void Renderer::drawPedestriansAndPets(
                     drawList->AddCircleFilled(ImVec2(screen.x, screen.y - 9.0f*s), 2.0f*s, IM_COL32(240, 200, 160, 255));
                 } else {
                     // Draw Pet (Dog)
-                    float runBob = abs(sinf(time * speed)) * 2.0f * s;
+                    float runBob = abs(sinf(pedestrianAccumulatedTimes[pedCount] * speed)) * 2.0f * s;
                     // Body
                     drawList->AddRectFilled(ImVec2(screen.x - 3.5f*s, screen.y - 3.0f*s - runBob), ImVec2(screen.x + 3.5f*s, screen.y - 1.0f*s - runBob), IM_COL32(160, 110, 60, 255), 1.0f*s);
                     // Head

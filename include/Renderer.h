@@ -65,6 +65,7 @@ private:
 
     void drawPedestriansAndPets(
         const CityArea& area,
+        const std::vector<Vehicle>& vehicles,
         bool isometricMode,
         const Camera2D& camera
     );
