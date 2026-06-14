@@ -143,40 +143,8 @@ void Vehicle::update(
         Vec2 target = route[currentTargetIndex];
         float dist = distance(position, target);
 
-        if (dist > 0.001f) {
-            Vec2 direction(target.x - position.x, target.y - position.y);
-            float targetAngle = std::atan2(direction.y, direction.x) * 180.0f / 3.14159265f;
-            
-            float diff = targetAngle - angleDegrees;
-            while (diff <= -180.0f) diff += 360.0f;
-            while (diff > 180.0f) diff -= 360.0f;
-            
-            if (std::abs(diff) > 0.1f) {
-                float turnSpeed = (speed / 16.0f) * (180.0f / 3.14159265f);
-                float maxTurn = turnSpeed * (moveDist / speed);
-                if (std::abs(diff) <= maxTurn) {
-                    float usedTurnDist = (std::abs(diff) / turnSpeed) * speed;
-                    moveDist -= usedTurnDist;
-                    angleDegrees = targetAngle;
-                } else {
-                    angleDegrees += (diff > 0 ? maxTurn : -maxTurn);
-                    moveDist = 0.0f;
-                    continue;
-                }
-            }
-            
-            if (moveDist >= dist) {
-                position = target;
-                moveDist -= dist;
-            } else {
-                float rad = angleDegrees * 3.14159265f / 180.0f;
-                position.x += std::cos(rad) * moveDist;
-                position.y += std::sin(rad) * moveDist;
-                moveDist = 0.0f;
-            }
-        } else {
-            // We are exactly at the target waypoint.
-            // Dynamically choose the next waypoint from any intersecting route!
+        // Advance to next waypoint if close enough (smooth cornering)
+        if (dist < 25.0f) {
             Vec2 prev = (currentTargetIndex > 0) ? route[currentTargetIndex - 1] : position;
             
             struct RouteOption {
@@ -221,7 +189,31 @@ void Vehicle::update(
             } else {
                 currentTargetIndex++;
             }
+            continue; // Re-evaluate with the new target
         }
+
+        // Steer towards target
+        Vec2 direction(target.x - position.x, target.y - position.y);
+        float targetAngle = std::atan2(direction.y, direction.x) * 180.0f / 3.14159265f;
+        
+        float diff = targetAngle - angleDegrees;
+        while (diff <= -180.0f) diff += 360.0f;
+        while (diff > 180.0f) diff -= 360.0f;
+        
+        float turnSpeed = 120.0f; // Turn speed in degrees per second
+        float maxTurn = turnSpeed * (moveDist / speed);
+        
+        if (std::abs(diff) <= maxTurn) {
+            angleDegrees = targetAngle;
+        } else {
+            angleDegrees += (diff > 0 ? maxTurn : -maxTurn);
+        }
+        
+        // Move forward along current angle
+        float rad = angleDegrees * 3.14159265f / 180.0f;
+        position.x += std::cos(rad) * moveDist;
+        position.y += std::sin(rad) * moveDist;
+        moveDist = 0.0f; // Consumed completely
     }
     updateTransform();
 }
