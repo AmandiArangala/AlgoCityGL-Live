@@ -108,11 +108,6 @@ void Application::run() {
             }
         }
 
-        if (imguiPanels.consumeResetRequest()) {
-            vehicleController.reset();
-            signalController.reset();
-        }
-
         if (imguiPanels.getIsPlaying()) {
             signalController.update(1.0f / 60.0f);
         }
