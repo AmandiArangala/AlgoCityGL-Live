@@ -181,6 +181,11 @@ void Renderer::renderCityArea(
     drawStopLines(trafficLights, isometricMode, camera);
     drawPedestrianCrossings(area, isometricMode, camera);
     
+    if (!xrayMode) {
+        buildCityPixelScene(area, selectedLineAlgorithm, xrayMode, isometricMode, camera);
+        drawPixelBuffer(xrayMode);
+    }
+
     // Draw nature and entities BEFORE buildings so they are occluded properly
     drawTrees(area, isometricMode, camera);
     drawPedestriansAndPets(area, vehicles, isometricMode, camera);
@@ -195,9 +200,11 @@ void Renderer::renderCityArea(
     }
     drawBuildingWindows(area, isometricMode, camera);
 
-    // 4. Raster pixel scene
-    buildCityPixelScene(area, selectedLineAlgorithm, xrayMode, isometricMode, camera);
-    drawPixelBuffer(xrayMode);
+    // If xrayMode is true, we want the raster lines drawn ON TOP of everything
+    if (xrayMode) {
+        buildCityPixelScene(area, selectedLineAlgorithm, xrayMode, isometricMode, camera);
+        drawPixelBuffer(xrayMode);
+    }
 
     // 5. Draw weather/night tint overlay over the whole scene
     drawLiveContextOverlay(liveContext);
