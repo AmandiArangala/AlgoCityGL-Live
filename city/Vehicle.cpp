@@ -76,8 +76,13 @@ void Vehicle::reset() {
     updateTransform();
 }
 
-void Vehicle::update(float deltaTime, const std::vector<RuntimeTrafficLight>& trafficLights, const std::vector<Vehicle>& otherVehicles) {
-    if (!routeReady || route.size() < 2) {
+void Vehicle::update(
+    float deltaTime,
+    const std::vector<RuntimeTrafficLight>& trafficLights,
+    const std::vector<Vehicle>& otherVehicles,
+    const std::vector<VehicleRoute>& allRoutes
+) {
+    if (!routeReady || opacity <= 0.0f || route.size() < 2) {
         return;
     }
 
@@ -140,24 +145,84 @@ void Vehicle::update(float deltaTime, const std::vector<RuntimeTrafficLight>& tr
 
         if (dist > 0.001f) {
             Vec2 direction(target.x - position.x, target.y - position.y);
-            angleDegrees = std::atan2(direction.y, direction.x) * 180.0f / 3.14159265f;
-        }
-
-        if (moveDist >= dist) {
-            position = target;
-            moveDist -= dist;
-            currentTargetIndex++;
+            float targetAngle = std::atan2(direction.y, direction.x) * 180.0f / 3.14159265f;
+            
+            float diff = targetAngle - angleDegrees;
+            while (diff <= -180.0f) diff += 360.0f;
+            while (diff > 180.0f) diff -= 360.0f;
+            
+            if (std::abs(diff) > 0.1f) {
+                float turnSpeed = (speed / 16.0f) * (180.0f / 3.14159265f);
+                float maxTurn = turnSpeed * (moveDist / speed);
+                if (std::abs(diff) <= maxTurn) {
+                    float usedTurnDist = (std::abs(diff) / turnSpeed) * speed;
+                    moveDist -= usedTurnDist;
+                    angleDegrees = targetAngle;
+                } else {
+                    angleDegrees += (diff > 0 ? maxTurn : -maxTurn);
+                    moveDist = 0.0f;
+                    continue;
+                }
+            }
+            
+            if (moveDist >= dist) {
+                position = target;
+                moveDist -= dist;
+            } else {
+                float rad = angleDegrees * 3.14159265f / 180.0f;
+                position.x += std::cos(rad) * moveDist;
+                position.y += std::sin(rad) * moveDist;
+                moveDist = 0.0f;
+            }
         } else {
-            Vec2 direction(target.x - position.x, target.y - position.y);
-            Vec2 dir = normalize(direction);
-            position.x += dir.x * moveDist;
-            position.y += dir.y * moveDist;
-            moveDist = 0.0f;
+            // We are exactly at the target waypoint.
+            // Dynamically choose the next waypoint from any intersecting route!
+            Vec2 prev = (currentTargetIndex > 0) ? route[currentTargetIndex - 1] : position;
+            
+            struct RouteOption {
+                std::vector<Vec2> routePoints;
+                int nextIndex;
+            };
+            std::vector<RouteOption> options;
+            
+            if (currentTargetIndex + 1 < static_cast<int>(route.size())) {
+                options.push_back({route, currentTargetIndex + 1});
+            }
+            
+            for (const VehicleRoute& vr : allRoutes) {
+                if (vr.points.size() == route.size() && !vr.points.empty() && !route.empty() && vr.points[0].x == route[0].x && vr.points[0].y == route[0].y) {
+                    continue; 
+                }
+                
+                for (size_t i = 0; i + 1 < vr.points.size(); i++) {
+                    float d = distance(target, vr.points[i]);
+                    if (d < 15.0f) {
+                        Vec2 optionDir(vr.points[i+1].x - vr.points[i].x, vr.points[i+1].y - vr.points[i].y);
+                        Vec2 currentDir(target.x - prev.x, target.y - prev.y);
+                        
+                        float curLen = std::sqrt(currentDir.x*currentDir.x + currentDir.y*currentDir.y);
+                        float optLen = std::sqrt(optionDir.x*optionDir.x + optionDir.y*optionDir.y);
+                        
+                        if (curLen > 0.001f && optLen > 0.001f) {
+                            float dotProd = optionDir.x * currentDir.x + optionDir.y * currentDir.y;
+                            float cosTheta = dotProd / (curLen * optLen);
+                            if (cosTheta > -0.5f) { // Allow turns, prevent U-turns
+                                options.push_back({vr.points, static_cast<int>(i + 1)});
+                            }
+                        }
+                    }
+                }
+            }
+            
+            if (!options.empty()) {
+                int choice = std::rand() % options.size();
+                route = options[choice].routePoints;
+                currentTargetIndex = options[choice].nextIndex;
+            } else {
+                currentTargetIndex++;
+            }
         }
     }
-
-    opacity = 1.0f;
-
     updateTransform();
 }
 

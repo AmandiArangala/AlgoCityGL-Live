@@ -12,7 +12,7 @@ public:
     Vehicle();
 
     void setRoute(const std::vector<Vec2>& routePoints);
-    void update(float deltaTime, const std::vector<RuntimeTrafficLight>& trafficLights, const std::vector<Vehicle>& otherVehicles);
+    void update(float deltaTime, const std::vector<RuntimeTrafficLight>& trafficLights, const std::vector<Vehicle>& otherVehicles, const std::vector<VehicleRoute>& allRoutes);
     void reset();
 
     const std::vector<Vec2>& getTransformedVertices() const;
