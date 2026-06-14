@@ -34,7 +34,8 @@ void VehicleController::initializeFromArea(const CityArea& area) {
                 std::vector<RuntimeTrafficLight> dummyLights;
                 float advanceTime = v * 8.0f; // Space them by 8 seconds of driving
                 for (float t = 0; t < advanceTime; t += 0.1f) {
-                    vehicle.update(0.1f, dummyLights);
+                    std::vector<Vehicle> emptyVehicles;
+                    vehicle.update(0.1f, dummyLights, emptyVehicles);
                 }
 
                 vehicles.push_back(vehicle);
@@ -61,7 +62,7 @@ void VehicleController::update(
     }
 
     for (Vehicle& vehicle : vehicles) {
-        vehicle.update(deltaTime, trafficLights);
+        vehicle.update(deltaTime, trafficLights, vehicles);
     }
 }
 

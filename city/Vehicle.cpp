@@ -76,13 +76,49 @@ void Vehicle::reset() {
     updateTransform();
 }
 
-void Vehicle::update(float deltaTime, const std::vector<RuntimeTrafficLight>& trafficLights) {
+void Vehicle::update(float deltaTime, const std::vector<RuntimeTrafficLight>& trafficLights, const std::vector<Vehicle>& otherVehicles) {
     if (!routeReady || route.size() < 2) {
         return;
     }
 
     if (shouldStopForRedLight(trafficLights)) {
         stoppedAtRedLight = true;
+        updateTransform();
+        return;
+    }
+
+    // Collision avoidance with other vehicles ahead
+    bool vehicleAhead = false;
+    float safeDistance = 70.0f; // Gap to maintain
+    
+    Vec2 direction = (currentTargetIndex < route.size()) 
+        ? Vec2(route[currentTargetIndex].x - position.x, route[currentTargetIndex].y - position.y)
+        : Vec2(0.0f, 0.0f);
+    Vec2 forward = normalize(direction);
+
+    for (const Vehicle& other : otherVehicles) {
+        if (&other == this) continue;
+
+        float d = distance(position, other.getPosition());
+        if (d < safeDistance) {
+            Vec2 toOther(other.getPosition().x - position.x, other.getPosition().y - position.y);
+            Vec2 toOtherDir = normalize(toOther);
+            
+            // Check if the other vehicle is in front
+            float dotProduct = forward.x * toOtherDir.x + forward.y * toOtherDir.y;
+            if (dotProduct > 0.8f) {
+                // Ensure they are roughly moving in same direction (not oncoming traffic crossing paths)
+                Vec2 otherForward(std::cos(other.getAngle() * 3.14159f / 180.0f), std::sin(other.getAngle() * 3.14159f / 180.0f));
+                if (forward.x * otherForward.x + forward.y * otherForward.y > 0.5f) {
+                    vehicleAhead = true;
+                    break;
+                }
+            }
+        }
+    }
+
+    if (vehicleAhead) {
+        stoppedAtRedLight = true; // reusing visual state for being stopped
         updateTransform();
         return;
     }
@@ -136,16 +172,30 @@ bool Vehicle::shouldStopForRedLight(const std::vector<RuntimeTrafficLight>& traf
     for (const RuntimeTrafficLight& light : trafficLights) {
         float d = distance(position, light.baseLight.position);
 
-        bool nearLight = d < 45.0f;
+        bool nearLight = d < 60.0f;
 
         if (nearLight && light.state == SignalState::Red) {
-            Vec2 toLight(light.baseLight.position.x - position.x, light.baseLight.position.y - position.y);
-            Vec2 toLightDir = normalize(toLight);
-            
-            float dotProduct = forward.x * toLightDir.x + forward.y * toLightDir.y;
-            
-            if (dotProduct > 0.5f) {
-                return true;
+            // Check if the light governs this vehicle's direction
+            bool governsDirection = false;
+            if (light.baseLight.direction.x == 0.0f && light.baseLight.direction.y == 0.0f) {
+                // Backward compatibility: no direction means governs all
+                governsDirection = true;
+            } else {
+                float lightDotProduct = forward.x * light.baseLight.direction.x + forward.y * light.baseLight.direction.y;
+                if (lightDotProduct > 0.8f) {
+                    governsDirection = true;
+                }
+            }
+
+            if (governsDirection) {
+                Vec2 toLight(light.baseLight.position.x - position.x, light.baseLight.position.y - position.y);
+                Vec2 toLightDir = normalize(toLight);
+                
+                float dotProduct = forward.x * toLightDir.x + forward.y * toLightDir.y;
+                
+                if (dotProduct > 0.5f) {
+                    return true;
+                }
             }
         }
     }
@@ -156,9 +206,13 @@ bool Vehicle::shouldStopForRedLight(const std::vector<RuntimeTrafficLight>& traf
 void Vehicle::updateTransform() {
     Matrix3x3 scale = Matrix3x3::scaling(1.0f, 1.0f);
     Matrix3x3 rotation = Matrix3x3::rotation(angleDegrees);
+    
+    // Offset vehicles to the left lane (approx 16 units)
+    Matrix3x3 laneOffset = Matrix3x3::translation(0.0f, -16.0f);
+
     Matrix3x3 translation = Matrix3x3::translation(position.x, position.y);
 
-    transformMatrix = translation * rotation * scale;
+    transformMatrix = translation * rotation * laneOffset * scale;
 
     transformedVertices.clear();
 

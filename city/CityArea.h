@@ -31,6 +31,9 @@ struct TrafficLight {
     float redDuration = 20.0f;
     float yellowDuration = 5.0f;
     float greenDuration = 20.0f;
+    std::string initialState = "Red";
+    float initialTimer = 0.0f;
+    Vec2 direction = Vec2(0.0f, 0.0f);
 };
 
 struct PedestrianCrossing {

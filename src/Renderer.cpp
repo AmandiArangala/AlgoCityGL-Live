@@ -236,14 +236,15 @@ void Renderer::drawRoadMarkings(
 
     if (lanes == 1) {
         drawDashedLine(0.0f);
-    } else if (lanes == 2) {
-        drawDashedLine(0.0f);
     } else {
-        // 3+ lanes: center dashed and side dashed
-        drawDashedLine(0.0f);
+        // Center solid line (Yellow/White depending on preference, we'll use Yellow for a real-world look)
+        ImVec2 pt1(a.x, a.y);
+        ImVec2 pt2(b.x, b.y);
+        drawList->AddLine(pt1, pt2, IM_COL32(255, 215, 0, 220), 3.0f * z);
+
+        // Dashed lines to separate the 2 lanes on each side
         drawDashedLine(roadWidth * 0.25f);
         drawDashedLine(-roadWidth * 0.25f);
-
     }
 }
 
@@ -2831,13 +2832,16 @@ void Renderer::drawPedestriansAndPets(
             float dy = p2.y - p1.y;
             float length = std::sqrt(dx * dx + dy * dy);
 
-            if (length < 60.0f) continue;
+            if (length < 5.0f) continue;
 
             float nx = -dy / length;
             float ny = dx / length;
 
-            // Spawn 2 entities per segment
-            for (int e = 0; e < 2; e++) {
+            // Moderate density: 1 entity every ~60 units
+            if (i % 3 != 0) continue;
+
+            // Spawn 1 entity per chosen segment
+            for (int e = 0; e < 1; e++) {
                 // Offset calculation for movement
                 float speed = 20.0f + ((i + e) % 15);
                 float duration = length / speed;
