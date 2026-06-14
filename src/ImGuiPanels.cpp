@@ -13,13 +13,6 @@ void ImGuiPanels::render() {
         isPlaying = !isPlaying;
     }
 
-    ImGui::SameLine();
-
-    if (ImGui::Button("Reset")) {
-        isPlaying = false;
-        resetRequested = true;
-    }
-
     ImGui::Separator();
 
     ImGui::Text("Area Selection");
@@ -93,15 +86,6 @@ bool ImGuiPanels::consumeLoadAreaRequest() {
 
 bool ImGuiPanels::getIsPlaying() const {
     return isPlaying;
-}
-
-bool ImGuiPanels::consumeResetRequest() {
-    if (resetRequested) {
-        resetRequested = false;
-        return true;
-    }
-
-    return false;
 }
 
 int ImGuiPanels::getSelectedWeatherMode() const {

@@ -12,13 +12,11 @@ public:
     bool getIsPlaying() const;
 
     bool consumeLoadAreaRequest();
-    bool consumeResetRequest();
 
 private:
     bool isPlaying = false;
     bool xrayMode = false;
     bool loadAreaRequested = false;
-    bool resetRequested = false;
 
     int selectedArea = 2;
     int selectedWeather = 0;
