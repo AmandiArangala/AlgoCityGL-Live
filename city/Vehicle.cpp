@@ -1,3 +1,13 @@
+/**
+ * @file Vehicle.cpp
+ * @brief Implements Vehicle behaviour, collision avoidance, and steering.
+ *
+ * Vehicles follow waypoints along a parsed VehicleRoute. They autonomously:
+ * 1. Calculate direction to their next waypoint.
+ * 2. Check for red lights and other vehicles in front of them.
+ * 3. Smoothly rotate towards their destination (turnSpeed mechanism).
+ * 4. Choose a random branching route at junctions if available.
+ */
 #include "Vehicle.h"
 #include <cmath>
 #include <cstdlib>
@@ -10,32 +20,34 @@ Vehicle::Vehicle()
       routeReady(false),
       stoppedAtRedLight(false) {
 
+    // Randomly assign a vehicle type.
     type = static_cast<Type>(std::rand() % 4);
 
+    // Initialise dimensions (local hitboxes) and base speeds for each type.
     if (type == CAR) {
         localVertices.push_back(Vec2(-18.0f, -10.0f));
         localVertices.push_back(Vec2(18.0f, -10.0f));
         localVertices.push_back(Vec2(18.0f, 10.0f));
         localVertices.push_back(Vec2(-18.0f, 10.0f));
-        speed = 80.0f + (std::rand() % 20);
+        speed = 80.0f + (std::rand() % 20); // Variable speed: 80-100
     } else if (type == BUS) {
         localVertices.push_back(Vec2(-28.0f, -11.0f));
         localVertices.push_back(Vec2(28.0f, -11.0f));
         localVertices.push_back(Vec2(28.0f, 11.0f));
         localVertices.push_back(Vec2(-28.0f, 11.0f));
-        speed = 50.0f + (std::rand() % 15);
+        speed = 50.0f + (std::rand() % 15); // Slower: 50-65
     } else if (type == TRUCK) {
         localVertices.push_back(Vec2(-24.0f, -12.0f));
         localVertices.push_back(Vec2(24.0f, -12.0f));
         localVertices.push_back(Vec2(24.0f, 12.0f));
         localVertices.push_back(Vec2(-24.0f, 12.0f));
-        speed = 55.0f + (std::rand() % 15);
+        speed = 55.0f + (std::rand() % 15); // 55-70
     } else if (type == BIKE) {
         localVertices.push_back(Vec2(-8.0f, -4.0f));
         localVertices.push_back(Vec2(8.0f, -4.0f));
         localVertices.push_back(Vec2(8.0f, 4.0f));
         localVertices.push_back(Vec2(-8.0f, 4.0f));
-        speed = 70.0f + (std::rand() % 20);
+        speed = 70.0f + (std::rand() % 20); // Agile: 70-90
     }
 
     updateTransform();
@@ -45,11 +57,13 @@ void Vehicle::setRoute(const std::vector<Vec2>& routePoints) {
     route = routePoints;
 
     if (route.size() >= 2) {
+        // Snap vehicle to the very first point of the new route.
         position = route[0];
         currentTargetIndex = 1;
         routeReady = true;
         stoppedAtRedLight = false;
 
+        // Immediately orient the vehicle towards waypoint 1.
         Vec2 direction(route[1].x - route[0].x, route[1].y - route[0].y);
 
         if (distance(route[0], route[1]) > 0.0f) {
@@ -86,13 +100,14 @@ void Vehicle::update(
         return;
     }
 
+    // 1. Check if we must stop at a traffic light ahead.
     if (shouldStopForRedLight(trafficLights)) {
         stoppedAtRedLight = true;
         updateTransform();
         return;
     }
 
-    // Collision avoidance with other vehicles ahead
+    // 2. Collision avoidance with other vehicles ahead
     bool vehicleAhead = false;
     float safeDistance = 70.0f; // Gap to maintain
     
@@ -102,17 +117,17 @@ void Vehicle::update(
     Vec2 forward = normalize(direction);
 
     for (const Vehicle& other : otherVehicles) {
-        if (&other == this) continue;
+        if (&other == this) continue; // Don't test against ourselves
 
         float d = distance(position, other.getPosition());
         if (d < safeDistance) {
             Vec2 toOther(other.getPosition().x - position.x, other.getPosition().y - position.y);
             Vec2 toOtherDir = normalize(toOther);
             
-            // Check if the other vehicle is in front
+            // Check if the other vehicle is physically in front of us (dot product > 0.8 is roughly a 36-deg cone)
             float dotProduct = forward.x * toOtherDir.x + forward.y * toOtherDir.y;
             if (dotProduct > 0.8f) {
-                // Ensure they are roughly moving in same direction (not oncoming traffic crossing paths)
+                // Ensure they are moving in the same direction, avoiding false-positives at intersections.
                 Vec2 otherForward(std::cos(other.getAngle() * 3.14159f / 180.0f), std::sin(other.getAngle() * 3.14159f / 180.0f));
                 if (forward.x * otherForward.x + forward.y * otherForward.y > 0.5f) {
                     vehicleAhead = true;
@@ -192,20 +207,23 @@ void Vehicle::update(
             continue; // Re-evaluate with the new target
         }
 
-        // Steer towards target
+        // Steer towards target smoothly
         Vec2 direction(target.x - position.x, target.y - position.y);
         float targetAngle = std::atan2(direction.y, direction.x) * 180.0f / 3.14159265f;
         
+        // Find shortest angular distance to target angle.
         float diff = targetAngle - angleDegrees;
         while (diff <= -180.0f) diff += 360.0f;
         while (diff > 180.0f) diff -= 360.0f;
         
-        float turnSpeed = 120.0f; // Turn speed in degrees per second
+        float turnSpeed = 120.0f; // Maximum turn speed in degrees per second
         float maxTurn = turnSpeed * (moveDist / speed);
         
         if (std::abs(diff) <= maxTurn) {
+            // Can reach target angle this frame.
             angleDegrees = targetAngle;
         } else {
+            // Turn as much as allowed.
             angleDegrees += (diff > 0 ? maxTurn : -maxTurn);
         }
         
@@ -261,18 +279,23 @@ bool Vehicle::shouldStopForRedLight(const std::vector<RuntimeTrafficLight>& traf
 }
 
 void Vehicle::updateTransform() {
+    // 1. Scale
     Matrix3x3 scale = Matrix3x3::scaling(1.0f, 1.0f);
+    // 2. Rotate
     Matrix3x3 rotation = Matrix3x3::rotation(angleDegrees);
     
-    // Offset vehicles to the left lane (approx 16 units)
+    // 3. Offset vehicle to the left side of the road to simulate left-hand traffic (approx 16 units).
     Matrix3x3 laneOffset = Matrix3x3::translation(0.0f, -16.0f);
 
+    // 4. Translate to world position.
     Matrix3x3 translation = Matrix3x3::translation(position.x, position.y);
 
+    // Combine transformations: T * R * Offset * S
     transformMatrix = translation * rotation * laneOffset * scale;
 
     transformedVertices.clear();
 
+    // Apply the composed 3x3 matrix to every local vertex of the vehicle body.
     for (const Vec2& vertex : localVertices) {
         transformedVertices.push_back(transformMatrix.transformPoint(vertex));
     }

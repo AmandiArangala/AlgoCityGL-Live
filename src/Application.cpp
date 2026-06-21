@@ -1,3 +1,10 @@
+/**
+ * @file Application.cpp
+ * @brief Implements the main Application class, the core orchestrator of AlgoCityGL.
+ *
+ * This file manages the primary run loop, window lifecycle, input processing,
+ * and orchestration between the Renderer, live simulation controllers, and UI.
+ */
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
@@ -29,10 +36,12 @@ bool Application::initialize() {
         return false;
     }
 
+    // Require OpenGL 3.3 Core Profile
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
+    // Create the main window.
     window = glfwCreateWindow(width, height, title.c_str(), nullptr, nullptr);
 
     if (!window) {
@@ -42,19 +51,23 @@ bool Application::initialize() {
     }
 
     glfwMakeContextCurrent(window);
+    // Enable v-sync
     glfwSwapInterval(1);
 
+    // Initialize GLAD to load OpenGL function pointers.
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
         std::cerr << "Failed to initialize GLAD" << std::endl;
         return false;
     }
 
+    // Set the initial OpenGL viewport size.
     glViewport(0, 0, width, height);
 
     glfwSetFramebufferSizeCallback(window, [](GLFWwindow*, int newWidth, int newHeight) {
         glViewport(0, 0, newWidth, newHeight);
     });
 
+    // Initialize Dear ImGui context and styling.
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
 
@@ -74,27 +87,35 @@ bool Application::initialize() {
 }
 
 void Application::run() {
+    // Main render and simulation loop.
     while (!glfwWindowShouldClose(window)) {
-        processInput();
+        processInput(); // Handle WASD, Zoom, etc.
 
-        glfwPollEvents();
+        glfwPollEvents(); // Process window events.
 
+        // Start a new ImGui frame.
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
+        // Render the UI panels and update configuration states.
         imguiPanels.render();
         liveContextEngine.setMode(imguiPanels.getSelectedWeatherMode());
 
+        // Check if the user requested a new area to load.
         if (imguiPanels.consumeLoadAreaRequest()) {
             std::string filePath = getAreaFilePath(imguiPanels.getSelectedArea());
 
+            // Attempt to load the JSON file.
             if (areaManager.loadAreaFromFile(filePath)) {
                 const CityArea& area = areaManager.getCurrentArea();
+                
+                // Re-initialise the simulation controllers with the new data.
                 vehicleController.initializeFromArea(area);
                 signalController.initializeFromArea(area);
                 
-                // Calculate the center of the loaded area to use as the camera's rotation pivot
+                // Calculate the center of the loaded area to use as the camera's rotation pivot.
+                // This ensures Z/X rotation always spins around the centre of the map.
                 float minX = 999999.0f, minY = 999999.0f, maxX = -999999.0f, maxY = -999999.0f;
                 for (const auto& r : area.roads) {
                     for (const auto& pt : r.points) {
@@ -108,19 +129,24 @@ void Application::run() {
             }
         }
 
+        // Update Simulation (only if playing)
         if (imguiPanels.getIsPlaying()) {
+            // Update traffic lights first
             signalController.update(1.0f / 60.0f);
         }
 
+        // Update vehicles (they use the context engine for weather-based speed penalties).
         vehicleController.update(
             (1.0f / 60.0f) * liveContextEngine.getVehicleSpeedMultiplier(),
             imguiPanels.getIsPlaying(),
             signalController.getTrafficLights()
         );
 
+        // Render everything.
         renderer.renderBackground();
 
         if (areaManager.hasLoadedArea()) {
+            // Draw the fully simulated city area.
             renderer.renderCityArea(
                 areaManager.getCurrentArea(),
                 vehicleController.getVehicles(),
@@ -132,15 +158,18 @@ void Application::run() {
                 camera
             );
         } else {
+            // Draw the fallback test scene if no area is loaded.
             renderer.renderDay2TestScene(
                 imguiPanels.getXRayMode(),
                 imguiPanels.getSelectedLineAlgorithm()
             );
         }
 
+        // Render ImGui over the OpenGL frame.
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
+        // Swap the front and back buffers to present the frame.
         glfwSwapBuffers(window);
     }
 }

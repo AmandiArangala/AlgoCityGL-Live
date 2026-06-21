@@ -1,3 +1,11 @@
+/**
+ * @file AreaManager.cpp
+ * @brief Implements parsing of JSON files representing city areas.
+ *
+ * This manager uses nlohmann/json to load real-world or generated map data.
+ * It populates the CityArea struct containing Roads, Buildings, Traffic Lights,
+ * and predefined Vehicle Routes.
+ */
 #include "AreaManager.h"
 
 #include <fstream>
@@ -6,10 +14,13 @@
 using json = nlohmann::json;
 
 Vec2 AreaManager::parsePoint(const json& pointJson) {
+    // Validate that the JSON node is an array with at least two elements [x, y].
     if (!pointJson.is_array() || pointJson.size() < 2) {
         return Vec2(0.0f, 0.0f);
     }
 
+    // SPREAD_FACTOR enlarges the map coordinates so buildings and roads
+    // appear suitably sized in our 2.5D coordinate space.
     const float SPREAD_FACTOR = 3.0f;
     return Vec2(
         pointJson[0].get<float>() * SPREAD_FACTOR,
@@ -28,6 +39,7 @@ bool AreaManager::loadAreaFromFile(const std::string& filePath) {
     json data;
 
     try {
+        // Parse the entire JSON file into the 'data' object.
         file >> data;
     } catch (const std::exception& e) {
         std::cerr << "Failed to parse JSON: " << e.what() << std::endl;
@@ -36,11 +48,13 @@ bool AreaManager::loadAreaFromFile(const std::string& filePath) {
 
     CityArea area;
 
+    // Load top-level area metadata.
     area.name = data.value("name", "Unnamed Area");
     area.latitude = data.value("latitude", 0.0f);
     area.longitude = data.value("longitude", 0.0f);
     area.defaultTrafficLevel = data.value("defaultTrafficLevel", "NORMAL");
 
+    // 1. Parse Roads
     if (data.contains("roads")) {
         for (const auto& roadJson : data["roads"]) {
             Road road;
@@ -58,11 +72,13 @@ bool AreaManager::loadAreaFromFile(const std::string& filePath) {
         }
     }
 
+    // 2. Parse Buildings
     if (data.contains("buildings")) {
         for (const auto& buildingJson : data["buildings"]) {
             Building building;
             building.id = buildingJson.value("id", "");
             building.name = buildingJson.value("name", "");
+            // Scale building height up slightly for visual emphasis in 2.5D.
             building.height = buildingJson.value("height", 50.0f) * 3.0f;
 
             if (buildingJson.contains("base")) {
@@ -75,6 +91,7 @@ bool AreaManager::loadAreaFromFile(const std::string& filePath) {
         }
     }
 
+    // 3. Parse Traffic Lights (Signals)
     if (data.contains("trafficLights")) {
         for (const auto& signalJson : data["trafficLights"]) {
             TrafficLight light;
@@ -84,6 +101,7 @@ bool AreaManager::loadAreaFromFile(const std::string& filePath) {
                 light.position = parsePoint(signalJson["position"]);
             }
 
+            // A traffic light cycle array is defined as: [RedDuration, YellowDuration, GreenDuration].
             if (signalJson.contains("cycle") && signalJson["cycle"].is_array()) {
                 const auto& cycle = signalJson["cycle"];
 
@@ -97,6 +115,7 @@ bool AreaManager::loadAreaFromFile(const std::string& filePath) {
             light.initialState = signalJson.value("initialState", "Red");
             light.initialTimer = signalJson.value("initialTimer", 0.0f);
             
+            // Direction governs which lane of traffic this light applies to.
             if (signalJson.contains("direction")) {
                 auto dirArr = signalJson["direction"];
                 if (dirArr.is_array() && dirArr.size() >= 2) {
