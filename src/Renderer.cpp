@@ -1002,7 +1002,7 @@ void Renderer::drawBuildingFills2_5D(
             }
         }
     }
-}
+
 
 /**
  * @brief Uses fundamental rasterisation algorithms (DDA, Bresenham, Midpoint Circle) to draw city elements.
