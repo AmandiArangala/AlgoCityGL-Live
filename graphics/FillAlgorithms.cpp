@@ -47,6 +47,7 @@ void FillAlgorithms::drawHorizontalSpan(
     int y,
     Color color
 ) {
+    // Ensure we always iterate left-to-right, regardless of intersection order.
     if (xStart > xEnd) {
         std::swap(xStart, xEnd); // Ensure left-to-right ordering.
     }

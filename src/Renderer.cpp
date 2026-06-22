@@ -1,3 +1,18 @@
+/**
+ * @file Renderer.cpp
+ * @brief Implements the core drawing and rendering pipeline for the AlgoCityGL application.
+ *
+ * This massive module is responsible for taking all simulation state (buildings,
+ * roads, vehicles, traffic lights, and weather contexts) and translating them
+ * into visual output via Dear ImGui's drawing API (ImDrawList).
+ *
+ * Key rendering phases:
+ * 1. Ground and Roads
+ * 2. Flat environment details (crossings, stop lines)
+ * 3. Raster algorithmic pixel drawing (if X-Ray enabled)
+ * 4. Depth-sorted 3D objects (Trees, Vehicles, Buildings)
+ * 5. Screen-space overlays (Weather, Night mode, UI Labels, Minimap)
+ */
 #include <glad/glad.h>
 
 #include "Renderer.h"
@@ -162,6 +177,12 @@ void Renderer::renderDay2TestScene(bool xrayMode, int selectedLineAlgorithm) {
     drawPixelBuffer(xrayMode);
 }
 
+/**
+ * @brief The main orchestration function for rendering a single frame of the simulation.
+ *
+ * This function enforces the correct draw order (painter's algorithm) to ensure
+ * depth is perceived correctly in a 2.5D environment without a Z-buffer.
+ */
 void Renderer::renderCityArea(
     const CityArea& area,
     const std::vector<Vehicle>& vehicles,
@@ -250,6 +271,9 @@ Vec2 Renderer::applyCamera(const Vec2& point, const Camera2D& camera) {
     return camera.worldToScreen(point);
 }
 
+/**
+ * @brief Draws the road network including sidewalks, curbs, asphalt, and dashed lane markings.
+ */
 void Renderer::drawRoads(
     const CityArea& area,
     bool isometricMode,
@@ -542,6 +566,12 @@ void Renderer::drawTopDownBuildingFills(
     }
 }
 
+/**
+ * @brief Draws buildings in an isometric (2.5D) view with simulated 3D depth and procedural facades.
+ *
+ * Sorts buildings back-to-front based on their lowest (closest) screen-space Y coordinate
+ * to ensure correct overlapping. Faces are drawn with simulated Phong illumination.
+ */
 void Renderer::drawBuildingFills2_5D(
     const CityArea& area,
     const LiveContextEngine& liveContext,
@@ -972,7 +1002,14 @@ void Renderer::drawBuildingFills2_5D(
             }
         }
     }
+}
 
+/**
+ * @brief Uses fundamental rasterisation algorithms (DDA, Bresenham, Midpoint Circle) to draw city elements.
+ * 
+ * This effectively reconstructs a wireframe of the map using purely CPU-side math,
+ * storing the results in the PixelBuffer.
+ */
 void Renderer::buildCityPixelScene(
     const CityArea& area,
     int selectedLineAlgorithm,

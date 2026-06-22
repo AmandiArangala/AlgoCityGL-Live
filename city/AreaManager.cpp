@@ -46,6 +46,7 @@ using json = nlohmann::json;
  * @return           The scaled Vec2, or (0, 0) if the input is invalid.
  */
 Vec2 AreaManager::parsePoint(const json& pointJson) {
+    // Validate that the JSON node is an array with at least two elements [x, y].
     if (!pointJson.is_array() || pointJson.size() < 2) {
         return Vec2(0.0f, 0.0f); // Guard against malformed point arrays.
     }

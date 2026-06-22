@@ -35,6 +35,7 @@
  * Any unrecognised index defaults to Sunny.
  */
 void LiveContextEngine::setMode(int selectedMode) {
+    // Map the ImGuiPanels combo-box integer index to the corresponding enum.
     switch (selectedMode) {
         case 0: mode = LiveContextMode::Sunny;        break;
         case 1: mode = LiveContextMode::Rain;         break;
@@ -76,14 +77,17 @@ bool LiveContextEngine::isIncidentMode()     const { return mode == LiveContextM
  * Modes that return 1.0 have no effect on vehicle speed.
  */
 float LiveContextEngine::getVehicleSpeedMultiplier() const {
+    // Rain slows vehicles: wet roads reduce traction.
     if (mode == LiveContextMode::Rain) {
         return 0.65f; // Wet roads → cautious driving (35% slower).
     }
 
+    // Heavy traffic: vehicles move significantly slower due to congestion.
     if (mode == LiveContextMode::HeavyTraffic) {
         return 0.45f; // Stop-and-go congestion (55% slower).
     }
 
+    // Incident zone: vehicles slow down as they pass the incident marker.
     if (mode == LiveContextMode::Incident) {
         return 0.55f; // Traffic slowing past an obstruction (45% slower).
     }

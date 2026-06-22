@@ -108,6 +108,7 @@ void VehicleController::update(
     bool isPlaying,
     const std::vector<RuntimeTrafficLight>& trafficLights
 ) {
+    // Do nothing while paused — vehicles hold their positions.
     if (!isPlaying) {
         return; // Simulation is paused; do not advance any vehicles.
     }
@@ -129,6 +130,7 @@ void VehicleController::update(
 // ─────────────────────────────────────────────────────────────────────────────
 
 void VehicleController::reset() {
+    // Reset each vehicle independently back to its route starting position.
     for (Vehicle& vehicle : vehicles) {
         vehicle.reset(); // Each vehicle resets its position to route waypoint 0.
     }

@@ -38,6 +38,7 @@ Camera2D::Camera2D()
  * A positive dx shifts the entire scene right; positive dy shifts it down.
  */
 void Camera2D::pan(float dx, float dy) {
+    // Accumulate panning offset (typically driven by WASD keys).
     offsetX += dx;
     offsetY += dy;
 }
@@ -85,6 +86,8 @@ void Camera2D::reset() {
  * (via rotateWorldPoint).
  */
 Vec2 Camera2D::worldToScreen(const Vec2& worldPoint) const {
+    // Apply zoom first, then translate by the pan offset.
+    // Note: Rotation is handled separately via rotateWorldPoint().
     return Vec2(
         worldPoint.x * zoom + offsetX,
         worldPoint.y * zoom + offsetY
@@ -99,6 +102,7 @@ Vec2 Camera2D::worldToScreen(const Vec2& worldPoint) const {
  *   world.y = (screen.y - offsetY) / zoom
  */
 Vec2 Camera2D::screenToWorld(const Vec2& screenPoint) const {
+    // Inverse transform: subtract pan offset, then divide by zoom.
     return Vec2(
         (screenPoint.x - offsetX) / zoom,
         (screenPoint.y - offsetY) / zoom

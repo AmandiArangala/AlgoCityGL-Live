@@ -24,6 +24,7 @@
  * so the next frame's putPixel() calls are likely allocation-free.
  */
 void PixelBuffer::clear() {
+    // Remove all stored pixels so the next frame starts fresh.
     pixels.clear();
 }
 
@@ -34,6 +35,7 @@ void PixelBuffer::clear() {
  * avoiding an extra copy compared to push_back(Pixel(...)).
  */
 void PixelBuffer::putPixel(int x, int y, Color color) {
+    // Construct a Pixel in-place at the end of the vector (avoids a copy).
     pixels.emplace_back(x, y, color);
 }
 
@@ -44,5 +46,6 @@ void PixelBuffer::putPixel(int x, int y, Color color) {
  * The reference is valid until the next clear() call.
  */
 const std::vector<Pixel>& PixelBuffer::getPixels() const {
+    // Return a const reference so the Renderer can iterate without copying.
     return pixels;
 }

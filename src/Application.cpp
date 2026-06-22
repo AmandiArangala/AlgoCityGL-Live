@@ -154,6 +154,7 @@ void Application::run() {
         if (imguiPanels.consumeLoadAreaRequest()) {
             std::string filePath = getAreaFilePath(imguiPanels.getSelectedArea());
 
+            // Attempt to load the JSON file.
             if (areaManager.loadAreaFromFile(filePath)) {
                 const CityArea& area = areaManager.getCurrentArea();
 
@@ -182,6 +183,7 @@ void Application::run() {
         // Only advance traffic lights when the simulation is playing.
         // Fixed timestep: 1/60 second per frame (matches 60 FPS VSync).
         if (imguiPanels.getIsPlaying()) {
+            // Update traffic lights first
             signalController.update(1.0f / 60.0f);
         }
 

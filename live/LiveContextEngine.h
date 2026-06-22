@@ -42,6 +42,12 @@ enum class LiveContextMode {
     Incident      ///< Road incident — red marker, moderately reduced speed.
 };
 
+/**
+ * @brief A lightweight state machine that tracks the current environmental mode.
+ *
+ * setMode() is called every frame from Application::run() with the integer
+ * index from ImGuiPanels, keeping the engine in sync with the UI.
+ */
 class LiveContextEngine {
 public:
     /**
